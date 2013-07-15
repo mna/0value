@@ -1,4 +1,8 @@
 .DS_Store
 *.swo
 *.swp
-
+public/*
+!public/css/
+!public/font/
+!public/js/
+!public/img/
