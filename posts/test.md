@@ -16,12 +16,12 @@ Basically, the blog engine is glue code to bring together existing packages in a
 
 If I was the kind of guy who believes in tl;dr, this is where I'd post something like
 
-`trofaf = [net/http][2] + [blackfriday][3] + [go-flags[4] + [fsnotify][5] + {[amber][6]|[html/template][7]}`
+`trofaf = [net/http][2] + [blackfriday][3] + [go-flags][4] + [fsnotify][5] + {[amber][6]|[html/template][7]}`
 
 and I'd be pretty much spot on. But I won't do that, so let's dive.
 
 ### From Markdown To Markup
 
-How the package works is that it needs three subdirectories to exist in its current (working) directory, `posts`, `public` and `templates`. It takes markdown files from `posts`, runs them through the `templates`, and saves the output as static HTML files in `public`. Simple and standard enough. So before there even *is* a blog post to serve to the world, it must make this magical translation.
+How the package works is that it needs three subdirectories to exist in the current (working) directory, `posts`, `public` and `templates`. It takes markdown files from `posts`, runs them through the `templates`, and saves the output as static HTML files in `public`. Simple and standard enough. So before there even *is* a blog post to serve to the world, it must make this magical translation.
 
 
