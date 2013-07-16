@@ -1,0 +1,3 @@
+* Lua coroutines in Go
+* Mocking library that uses reflection (MakeFunc) to fully implement an interface, no code generation required (not possible at the moment - cannot create a new type on the fly)
+* Vim setting for Go
