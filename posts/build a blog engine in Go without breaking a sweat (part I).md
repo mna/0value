@@ -1,7 +1,7 @@
 ---
 Author: Martin Angers
 Title: Build a blog engine in Go without breaking a sweat (part I)
-Description: 
+Description: I built a static blog generator in Go. It's called trofaf because that's its name. Get this: it takes markdown files, reads some YAML front matter, and generates good ol' HTML files. Yeah, pretty revolutionary. I can already smell the Nobel. Anyway, the goal of this post is not to brag about the novelty of the thing, but to show how easy it is to get this done with Go's rich standard library and some fine userland packages.
 Date: 2013-07-15
 Lang: en
 ---
@@ -40,7 +40,8 @@ type ShortPost struct {
 	ModTime time.Time
 }
 
-// The LongPost structure adds the parsed content of the post to the embedded ShortPost information.
+// The LongPost structure adds the parsed content of the post 
+// to the embedded ShortPost information.
 type LongPost struct {
 	*ShortPost
 	Content string
@@ -59,12 +60,26 @@ type TemplateData struct {
 }
 ```
 
-You get some website metadata (`SiteName`, `TagLine`, `RssURL`), the current post to display - along with its own metadata, most of it coming from the YAML front matter -, a slice of recent posts (up to `Options.RecentPostsCount`, set using a command-line flag), and the previous and next post in chronological order.
+You get some website parameters (`SiteName`, `TagLine`, `RssURL`), the current post to display - along with its metadata, most of it coming from the YAML front matter -, a slice of recent posts (up to `Options.RecentPostsCount`, set using a command-line flag), and the previous and next post in chronological order.
 
 When the engine finds a post to render, it calls `newLongPost(fi os.FileInfo)`. This method is responsible for filling the `LongPost` structure, so it loads the file identified by the `os.FileInfo` interface and it starts looking for the front matter. This is very simple to parse:
 
 ``` go
 // From tpldata.go
+
+func newLongPost(fi os.FileInfo) (*LongPost, error) {
+	f, err := os.Open(filepath.Join(PostsDir, fi.Name()))
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	s := bufio.NewScanner(f)
+	m, err := readFrontMatter(s)
+	if err != nil {
+		return nil, err
+	}
+	// -truncated-
+}
 
 // The function returns a map of the key-value pairs found in the front matter.
 func readFrontMatter(s *bufio.Scanner) (map[string]string, error) {
@@ -102,11 +117,23 @@ func readFrontMatter(s *bufio.Scanner) (map[string]string, error) {
 
 The possibility of having invalid files (that is, `*.md` files that don't have valid front matter) is the reason why the `newLongPost` function returns two values, the created post and an error. In case of an error, the post file is simply ignored by the site generator.
 
-Once the front matter is validated and stored safely in a map, the post structure is created with a slug derived from the name of the file. To process the actual markdown, and turn it into HTML, the [`blackfriday`][3] library is used. It is a great parser, but the API could be a little more Go-ish (like take an `io.Reader` instead of a slice of bytes, and support writing to an `io.Writer` instead of returning a slice of bytes). Still, it does what it does very well. But the file is already partly consumed, thanks to our `readFrontMatter` function, so how can we get the rest? My first attempt was to simply call `ioutil.ReadAll()` on the file, but it skipped parts of the file. This is obvious, in hindsight, since the `bufio.Scanner` used to read the front matter is buffered, so more bytes were consumed than just the front matter. I ended up re-creating the rest of the file (the actual markdown part) by calling `s.Scan()` until the EOF, appending back the newline character to each line.
+Once the front matter is validated and stored safely in a map, the post structure is created with a slug derived from the name of the file. To process the actual markdown, and turn it into HTML, the [`blackfriday`][3] library is used. It is a great parser, but the API could be a little more Go-ish (like take an `io.Reader` instead of a slice of bytes, and support writing to an `io.Writer` instead of returning a slice of bytes). Still, it does what it does very well.
+
+But the file is already partly consumed, thanks to our `readFrontMatter` function, so how can we get the rest? My first attempt was to simply call `ioutil.ReadAll(f)`, but it skipped valid parts of the file. This is obvious, in hindsight, since the `bufio.Scanner` used to read the front matter is buffered (you know, **buf**io), so more bytes were consumed than just the front matter. I ended up re-creating the rest of the file (the actual markdown part) by calling `s.Scan()` until the EOF, appending back the newline character to each line.
+
+``` go
+// From tpldata.go | newLongPost()
+
+// Read rest of file
+buf := bytes.NewBuffer(nil)
+for s.Scan() {
+	buf.WriteString(s.Text() + "\n")
+}
+```
 
 With this slice of bytes containing all the markdown part of the file, and none of the YAML front matter, getting the HTML is simply a matter of calling `blackfriday.MarkdownCommon()`. This parses the markdown using a common set of options for the HTML renderer (various renderers can be implemented for blackfriday).
 
-This is getting a little long, so I'll split it in two parts, see the rest [here][8].
+This initial post is getting a little long, so I'll split it in two parts, see the rest [here][8].
 
 [1]: https://github.com/PuerkitoBio/trofaf
 [2]: http://tip.golang.org/pkg/net/http/
@@ -115,4 +142,4 @@ This is getting a little long, so I'll split it in two parts, see the rest [here
 [5]: https://github.com/howeyc/fsnotify
 [6]: https://github.com/eknkc/amber
 [7]: http://tip.golang.org/pkg/html/template/
-[8]: http://0value.com/
+[8]: http://0value.com/build-a-blog-engine-in-Go-without-breaking-a-sweat--part-II- 
