@@ -44,7 +44,7 @@ type ShortPost struct {
 // to the embedded ShortPost information.
 type LongPost struct {
 	*ShortPost
-	Content string
+	Content template.HTML
 }
 
 // The TemplateData structure contains all the relevant information passed to the
@@ -60,7 +60,7 @@ type TemplateData struct {
 }
 ```
 
-You get some website parameters (`SiteName`, `TagLine`, `RssURL`), the current post to display - along with its metadata, most of it coming from the YAML front matter -, a slice of recent posts (up to `Options.RecentPostsCount`, set using a command-line flag), and the previous and next post in chronological order.
+You get some website parameters (`SiteName`, `TagLine`, `RssURL`), the current post to display - along with its metadata, most of it coming from the YAML front matter -, a slice of recent posts (up to `Options.RecentPostsCount`, set using a command-line flag), and the previous and next post in chronological order. The `template.HTML` type for the content means that this field can be safely rendered unescaped by the template, underneath it is a `string`.
 
 When the engine finds a post to render, it calls `newLongPost(fi os.FileInfo)`. This method is responsible for filling the `LongPost` structure, so it loads the file identified by the `os.FileInfo` interface and it starts looking for the front matter. This is very simple to parse:
 

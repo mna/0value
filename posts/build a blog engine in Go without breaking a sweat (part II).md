@@ -10,4 +10,5 @@ Lang: en
 
 Part I of this two-part post is [here][1].
 
+
 [1]: http://0value.com/build-a-blog-engine-in-Go-without-breaking-a-sweat--part-I-
