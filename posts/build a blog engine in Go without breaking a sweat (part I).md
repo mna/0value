@@ -1,12 +1,12 @@
 ---
 Author: Martin Angers
-Title: Build a blog engine in Go without breaking a sweat
+Title: Build a blog engine in Go without breaking a sweat (part I)
 Description: 
 Date: 2013-07-15
 Lang: en
 ---
 
-# Build a blog engine in Go without breaking a sweat
+# Build a blog engine in Go without breaking a sweat (part I)
 
 I built a static blog generator in Go. It's called [trofaf][1] because that's its name. Get this: it takes markdown files, reads some YAML front matter, and generates good ol' HTML files. Yeah, pretty revolutionary. I can already smell the Nobel. Anyway, the goal of this post is not to brag about the novelty of the thing, but to show how easy it is to get this done with Go's rich standard library and some fine userland packages.
 
@@ -16,7 +16,9 @@ Basically, the blog engine is glue code to bring together existing packages in a
 
 If I was the kind of guy who believes in tl;dr, this is where I'd post something like
 
-`trofaf = [net/http][2] + [blackfriday][3] + [go-flags[4] + [fsnotify][5] + {[amber][6]|[html/template][7]}`
+```
+trofaf = [net/http][2] + [blackfriday][3] + [go-flags[4] + [fsnotify][5] + {[amber][6]|[html/template][7]}
+```
 
 and I'd be pretty much spot on. But I won't do that, so let's dive.
 
@@ -100,4 +102,19 @@ func readFrontMatter(s *bufio.Scanner) (map[string]string, error) {
 }
 ```
 
-The possibility of having invalid files is the reason why the `newLongPost` function returns two values, the post and an error. In case of an error, the post file is simply ignored by the site generator.
+The possibility of having invalid files (that is, `*.md` files that don't have valid front matter) is the reason why the `newLongPost` function returns two values, the created post and an error. In case of an error, the post file is simply ignored by the site generator.
+
+Once the front matter is validated and stored safely in a map, the post structure is created with a slug derived from the name of the file. To process the actual markdown, and turn it into HTML, the [`blackfriday`][3] library is used. It is a great parser, but the API could be a little more Go-ish (like take an `io.Reader` instead of a slice of bytes, and support writing to an `io.Writer` instead of returning a slice of bytes). Still, it does what it does very well. But the file is already partly consumed, thanks to our `readFrontMatter` function, so how can we get the rest? My first attempt was to simply call `ioutil.ReadAll()` on the file, but it skipped parts of the file. This is obvious, in hindsight, since the `bufio.Scanner` used to read the front matter is buffered, so more bytes were consumed than just the front matter. I ended up re-creating the rest of the file (the actual markdown part) by calling `s.Scan()` until the EOF, appending back the newline character to each line.
+
+With this slice of bytes containing all the markdown part of the file, and none of the YAML front matter, getting the HTML is simply a matter of calling `blackfriday.MarkdownCommon()`. This parses the markdown using a common set of options for the HTML renderer (various renderers can be implemented for blackfriday).
+
+This is getting a little long, so I'll split it in two parts, see the rest [here][8].
+
+[1]: https://github.com/PuerkitoBio/trofaf
+[2]: http://tip.golang.org/pkg/net/http/
+[3]: https://github.com/russross/blackfriday
+[4]: https://github.com/jessevdk/go-flags
+[5]: https://github.com/howeyc/fsnotify
+[6]: https://github.com/eknkc/amber
+[7]: http://tip.golang.org/pkg/html/template/
+[8]: http://0value.com/
