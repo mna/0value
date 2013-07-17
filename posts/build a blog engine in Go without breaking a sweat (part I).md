@@ -16,7 +16,7 @@ Basically, the blog engine is glue code to bring together existing packages in a
 
 If I was the kind of guy who believes in tl;dr, this is where I'd post something like
 
-> trofaf = [net/http][2] + [blackfriday][3] + [go-flags[4] + [fsnotify][5] + {[amber][6]|[html/template][7]}
+> trofaf = [net/http][2] + [blackfriday][3] + [go-flags][4] + [fsnotify][5] + {[amber][6]|[html/template][7]}
 
 and I'd be pretty much spot on. But I won't do that, so let's dive.
 
