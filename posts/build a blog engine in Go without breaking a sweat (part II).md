@@ -10,13 +10,14 @@ Lang: en
 
 Part I of this two-part post is [here][1].
 
-## Website generation
+## And Then There Was Light
 
 Now that we're friends with the most important data structures of the blog engine, let's look at the site generator, which is essentially the `gen.go` file. The `generateSite()` function is responsible for driving the show, so let's break it down:
 
 ``` go
 // From gen.go
 
+// Generate the whole site.
 func generateSite() error {
 	// First compile the template(s)
 	if err := compileTemplates(); err != nil {
@@ -29,25 +30,8 @@ func generateSite() error {
 	}
 	// Remove directories from the list, keep only .md files
 	fis = filter(fis)
-
 	// Get all posts.
-	all := make(sortableLongPost, 0, len(fis))
-	for _, fi := range fis {
-		lp, err := newLongPost(fi)
-		if err == nil {
-			all = append(all, lp)
-		} else {
-			log.Printf("post skipped: %s; error: %s\n", fi.Name(), err)
-		}
-	}
-	// Then sort in reverse order (newer first)
-	sort.Sort(sort.Reverse(all))
-	cnt := Options.RecentPostsCount
-	if l := len(all); l < cnt {
-		cnt = l
-	}
-	// Slice to get only recent posts
-	recent := all[:cnt]
+	all, recent := getPosts(fis)
 	// Delete current public directory files
 	if err := clearPublicDir(); err != nil {
 		return err
@@ -63,14 +47,27 @@ func generateSite() error {
 	td := newTemplateData(nil, 0, recent, nil)
 	return generateRss(td)
 }
-```
 
-It starts by compiling the templates, and if this doesn't work, the generation stops there, leaving the previously generated site untouched. This gives you the opportunity to fix the templates while the server is still serving pages (because as we'll see in a minute, there's a watcher involved and the site can be dynamically re-generated). trofaf supports both the Amber templates and the native Go templates, but that's a detail I'll skip for this blog post, you can check the `compileTemplates` function if you're curious.
-
-Next, it reads all files from the `posts` directory, and filters the results. Here's the filter function:
-
-``` go
-// From gen.go
+func getPosts(fis []os.FileInfo) (all, recent []*LongPost) {
+	all = make([]*LongPost, 0, len(fis))
+	for _, fi := range fis {
+		lp, err := newLongPost(fi)
+		if err == nil {
+			all = append(all, lp)
+		} else {
+			log.Printf("post ignored: %s; error: %s\n", fi.Name(), err)
+		}
+	}
+	// Then sort in reverse order (newer first)
+	sort.Sort(sort.Reverse(sortablePosts(all)))
+	cnt := Options.RecentPostsCount
+	if l := len(all); l < cnt {
+		cnt = l
+	}
+	// Slice to get only recent posts
+	recent = all[:cnt]
+	return
+}
 
 func filter(fi []os.FileInfo) []os.FileInfo {
 	for i := 0; i < len(fi); {
@@ -84,7 +81,9 @@ func filter(fi []os.FileInfo) []os.FileInfo {
 }
 ```
 
-Basically, it ignores directories and any file that doesn't have the `.md` extension. The clever slice manipulation is taken from the [slice tricks][2] wiki page. It removes an item from a slice without preserving the order, which is exaclty what I want at this point. It works by replacing the item to remove with the last item in the slice (`fi[i] = fi[len(fi)-1]`), and then reslicing by omitting the last element (which is still present because it replaced the item to remove - unless, of course, the item to remove was the last item, in which case it still works).
+It starts by compiling the templates, and if this doesn't work, the generation stops there, leaving the previously generated site untouched. This gives the opportunity to fix the templates while the server is still serving pages (because as we'll see in a minute, there's a watcher involved and the site can be dynamically re-generated). trofaf supports both the Amber templates and the native Go templates, but that's a detail I'll skip for this blog post, you can check the `compileTemplates` function if you're curious.
+
+Next, it reads all files from the `posts` directory, and filters the results. The `filter()` function ignores directories and any file that doesn't have the `.md` extension. The clever slice manipulation is taken from the [slice tricks][2] wiki page. It removes an item from a slice without preserving the order, which is exaclty what I want at this point. It works by replacing the item to remove with the last item in the slice (`fi[i] = fi[len(fi)-1]`), and then reslicing by omitting the last element (which is still present because it replaced the item to remove - unless, of course, the item to remove was the last item, in which case it still works and the first assignment is essentially a no-op).
 
 Back to the `generateSite()` function, it then loads all posts into their data structure, ignoring invalid posts (we've already seen how this worked). The next interesting bit is the custom sort, based on the published date. This is done by implementing the stdlib's `sort.Interface`:
 
@@ -97,7 +96,51 @@ func (s sortablePosts) Less(i, j int) bool { return s[i].PubTime.Before(s[j].Pub
 func (s sortablePosts) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 ```
 
+As seen in `getPosts()`, the `sort.Reverse()` call is used to sort with the latest posts first. This function returns a valid `sort.Interface` implementation that can be passed to `sort.Sort()`, and is simply the opposite of the provided interface. `getPosts()` also slices the `all` slice of posts to represent only the recent posts, up to the number specified on the command-line.
+
+The `clearPublicDir()` doesn't provide much surprises, it removes existing files to make way for the new ones (since posts can be deleted, they must disappear from the static site). The only thing to mention is that subdirectories are left untouched, so that `css/`, `js/`, `img/` or whatever other useful asset can be safely kept from harm. Some other special files directly under `public/` are also ignored, such as `robots.txt`, `favicon.ico` and such.
+
+Finally, the static HTML file is generated by creating the `TemplateData` structure and running it through the template, saving the result. Since this is a minimalist blog engine that favors simplicity over features, there's a special case for the index page (the page that gets served when the root path is requested). It is the most recent blog post. So this post is saved twice, once under its own name, and once under `index.html`, using an `io.MultiWriter`. There's also an RSS generated using the recent posts slice and a slightly adapted and embedded version of the RSS generator in [gbt][3].
+
+## File-Level PRISM
+
+One nice thing with trofaf is that it watches. Oh yes, it stares and spies and takes care of business. Using the great [fsnotify][4] package (that is - [from what I understand][5] - in the process of being included in the stdlib), the `posts` and `templates` directories are under surveillance and any change to a `posts/*.md` file, `templates/*.amber` or `templates/*.html` triggers a regeneration of the site. Because multiple events can be triggered in close succession when a file changes, there is a delay (10 seconds at the moment) after the last event received before the generation is actually executed. The watch function looks like this:
+
+``` go
+// From watch.go
+
+func watch(w *fsnotify.Watcher) {
+	var delay <-chan time.Time
+	for {
+		select {
+		case ev := <-w.Event:
+			// Regenerate the files after the delay, reset the delay if an event is triggered
+			// in the meantime
+			ext := filepath.Ext(ev.Name)
+			// Care only about changes to markdown files in the Posts directory, or to
+			// Amber or Native Go template files in the Templates directory.
+			if strings.HasPrefix(ev.Name, PostsDir) && ext == ".md" {
+				delay = time.After(watchEventDelay)
+			} else if strings.HasPrefix(ev.Name, TemplatesDir) && (ext == ".amber" || ext == ".html") {
+				delay = time.After(watchEventDelay)
+			}
+
+		case err := <-w.Error:
+			log.Println("WATCH ERROR ", err)
+
+		case <-delay:
+			if err := generateSite(); err != nil {
+				log.Println("ERROR generating site: ", err)
+			} else {
+				log.Println("site generated")
+			}
+		}
+	}
+}
+```
 
 [1]: http://0value.com/build-a-blog-engine-in-Go-without-breaking-a-sweat--part-I-
 [2]: https://code.google.com/p/go-wiki/wiki/SliceTricks
-
+[3]: https://github.com/krautchan/gbt
+[4]: https://github.com/howeyc/fsnotify
+[5]: https://code.google.com/p/go/issues/detail?id=4068
