@@ -73,8 +73,12 @@ html.no-js[lang="en"]
 				for (var i = 0; i < codes.length; ++i) {
 					codes[i].classList.add("prettyprint", "lang-go");
 				}
+				el = document.createElement("script");
+				sc = document.getElementsByTagName("script")[0];
+				el.async = 1;
+				el.src = "https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js?lang=go";
+				sc.parentNode.insertBefore(el, sc);
 			}
-		script[src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js?lang=css&skin=sunburst"]
 		script
 			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
