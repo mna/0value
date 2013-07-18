@@ -139,8 +139,67 @@ func watch(w *fsnotify.Watcher) {
 }
 ```
 
+## Gotta Serve Somebody
+
+Somewhere in there there must be a web server, right? Right. This might be the simplest part of the blog engine. Here it is in all its glory:
+
+``` go
+// From server.go
+
+// Start serving the blog.
+func run() {
+	h := handlers.FaviconHandler(
+		handlers.PanicHandler(
+			handlers.LogHandler(
+				handlers.GZIPHandler(
+					http.FileServer(http.Dir(PublicDir)),
+					nil),
+				handlers.NewLogOptions(nil, handlers.Lshort)),
+			nil),
+		faviconPath,
+		faviconCache)
+
+	// Assign the combined handler to the server.
+	http.Handle("/", h)
+
+	// Start it up.
+	log.Printf("trofaf server listening on port %d", Options.Port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", Options.Port), nil); err != nil {
+		log.Fatal("FATAL ", err)
+	}
+}
+```
+
+At its heart is the [stdlib's `http.FileServer()` function][7], that serves static file. Out-of-the-box, it does pretty much all that is needed, including serving an `index.html` file if it exists (otherwise it just renders the content of the directory). The rest is from my [ghost][6] package and it's there just to spice things up a little, like supporting gzip encoding, serving a status code 500 on panics, logging the requests' data and caching the favicon.
+
+## Wherever This Flag's Flown
+
+And then there's the main function, and the flag library to handle the command-line options. I decided to go with [go-flags][8] instead of the stdlib's flag package, because it provides a nice and clean way to define the options in a structure, and makes use of the field tag to configure each parameter. It's also closer to the GNU getopt implementation (at least for the short and long flags), although I'm not sure if it is fully compliant.
+
+The `options` structure looks like this:
+
+``` go
+// From main.go
+
+type options struct {
+	Port             int    `short:"p" long:"port" description:"the port to use for the web server" default:"9000"`
+	NoGen            bool   `short:"G" long:"no-generation" description:"when set, the site is not automatically generated"`
+	SiteName         string `short:"n" long:"site-name" description:"the name of the site" default:"Site Name"`
+	TagLine          string `short:"t" long:"tag-line" description:"the site's tag line"`
+	RecentPostsCount int    `short:"r" long:"recent-posts" description:"the number of recent posts to send to the templates" default:"5"`
+	BaseURL          string `short:"b" long:"base-url" description:"the base URL of the web site" default:"http://localhost"`
+}
+```
+
+## Blog Away
+
+That's all there is to it! I've skipped over some implementation details, but the essential parts have been covered. You end up with a static blog generator that parses markdown and YAML front matter, that watches for changes and generates an up-to-date website on the fly, and serves it efficiently to the whole world. Use it as-is if, like me, you like things simple and minimal, or fork and enhance as you see fit!
+
 [1]: http://0value.com/build-a-blog-engine-in-Go-without-breaking-a-sweat--part-I-
 [2]: https://code.google.com/p/go-wiki/wiki/SliceTricks
 [3]: https://github.com/krautchan/gbt
 [4]: https://github.com/howeyc/fsnotify
 [5]: https://code.google.com/p/go/issues/detail?id=4068
+[6]: https://github.com/PuerkitoBio/ghost
+[7]: http://tip.golang.org/pkg/net/http/#FileServer
+[8]: https://github.com/jessevdk/go-flags
