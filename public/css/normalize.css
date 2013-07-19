@@ -170,10 +170,6 @@ strong {
     font-weight: bold;
 }
 
-blockquote {
-    margin: 1em 40px;
-}
-
 /**
  * Address styling not present in Safari 5 and Chrome.
  */
@@ -226,13 +222,13 @@ samp {
 
 /**
  * Improve readability of pre-formatted text in all browsers.
- */
 
 pre {
     white-space: pre;
     white-space: pre-wrap;
     word-wrap: break-word;
 }
+*/
 
 /**
  * Address CSS quotes not supported in IE 6/7.
