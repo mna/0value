@@ -46,10 +46,10 @@ html.no-js[lang="en"]
 		footer
 			div.container
 				div.left
-					a[href="https://github.com/PuerkitoBio"][title="@PuerkitoBio on GitHub"]
+					a.huge[href="https://github.com/PuerkitoBio"][title="@PuerkitoBio on GitHub"]
 						span.icon-github-circled
 				div.right
-					a[href="https://twitter.com/PuerkitoBio"][title="@PuerkitoBio on Twitter"]
+					a.huge[href="https://twitter.com/PuerkitoBio"][title="@PuerkitoBio on Twitter"]
 						span.icon-twitter
 				div.middle
 					if Recent

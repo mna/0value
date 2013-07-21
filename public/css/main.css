@@ -186,6 +186,7 @@ nav .middle {
 	font-size: 300%;
 }
 a.huge {
+	color: #0f1a3e;
 	text-decoration:none;
 }
 footer {
@@ -198,16 +199,15 @@ footer ul {
 		margin: 0;
     list-style: bullet;
 		text-align: left;
+		list-style-position:inside;
 }
-footer [class^="icon-"] {
-	font-size: 400%;
+footer ul a {
+	color: #0f1a3e;
 }
-
 footer .middle {
 	clear: both;
 	width: 100%;
 }
-
 small {
 	font-size: 80%;
 }
