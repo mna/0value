@@ -21,9 +21,16 @@ html.no-js[lang="en"]
 
 			header
 				hgroup
-					h1
-						a[href="/"] #{SiteName}
-					h2 #{TagLine}
+					div.left
+						h1
+							a[href="/"] #{SiteName}
+						h2 #{TagLine}
+					div.right
+						a.huge[href="https://github.com/PuerkitoBio"][title="@PuerkitoBio on GitHub"]
+							span.icon-github-circled
+						a.huge[href="https://twitter.com/PuerkitoBio"][title="@PuerkitoBio on Twitter"]
+							span.icon-twitter
+					div.clearfix
 
 			hr
 
@@ -63,11 +70,6 @@ html.no-js[lang="en"]
 					small
 						| © 2013 Martin Angers, built with 
 						a[href="https://github.com/PuerkitoBio/trofaf"] trofaf
-						a[href="https://github.com/PuerkitoBio"][title="@PuerkitoBio on GitHub"]
-							span.icon-github-circled
-						|  
-						a[href="https://twitter.com/PuerkitoBio"][title="@PuerkitoBio on Twitter"]
-							span.icon-twitter
 		script
 			if (document.querySelectorAll && "classList" in document.documentElement) {
 				codes = document.querySelectorAll("pre code");
