@@ -101,13 +101,12 @@ body {
 	color: black;
   background-color: rgb(245, 245, 245);
 }
-
-/* Default padding for mobile */
 .content {
-	padding-left: 10px;
-	padding-right: 10px;
+	padding: 0 10px;
 }
-
+.container {
+	width: 100%;
+}
 a {
   color: rgb(0, 0, 136);
   text-decoration: none;
@@ -115,12 +114,10 @@ a {
 a:hover {
   text-decoration: underline;
 }
-
 header a, header a:hover {
 	color: black;
 	text-decoration: none;
 }
-
 header h1 {
 	font-weight: bold;
 	font-size: 110%;
@@ -133,26 +130,8 @@ header h2 {
 	padding: 0;
 	margin: 3px;
 }
-
-.container {
-	width: 100%;
-}
-.left, .middle {
-	float: left;
-}
-.left, .right {
-	width: 25%;
-}
-.middle {
-	width: 50%;
-	text-align: center;
-}
-.right {
-	float: right;
-	text-align: right;
-}
-.huge {
-	font-size: 250%;
+.meta {
+	line-height: 1.0;
 }
 blockquote {
 	margin: 0;
@@ -179,6 +158,7 @@ pre {
 	border: 1px solid rgb(200, 200, 200);
 	overflow: auto;
 	width: auto;
+	line-height: 1.1;
 }
 pre code {
 	background-color: inherit;
@@ -186,26 +166,46 @@ pre code {
 	margin: 0;
 	padding: 0;
 }
-
 footer {
-	min-height: 100px;
+	min-height: 200px;
+	margin: 20px 0;
 }
-footer ul {
-		padding: 0;
-		margin: 0;
-    list-style: bullet;
-		text-align: left;
-		list-style-position:inside;
-}
-time {
+time, small {
 	color: rgb(70, 70, 70);
 	font-size: 70%;
 }
-small {
-	font-size: 80%;
+.left, .middle {
+	float: left;
 }
-[class^="icon-"] {
-	font-size: 140%;
+.middle {
+	text-align: center;
+}
+.right {
+	float: right;
+	text-align: right;
+}
+.title {
+	width: 60%;
+}
+.social {
+	width: 40%;
+}
+.half {
+	width: 50%;
+}
+.quarter {
+	width: 25%;
+}
+.huge {
+	font-size: 200%;
+}
+.big {
+	font-size: 110%;
+}
+ul {
+	padding: 0;
+	margin: 20px 0;
+	list-style: none;
 }
 
 /*
@@ -241,27 +241,21 @@ small {
 
 @media all and (min-width: 40em) {
 	.content {
-		padding-left: 10%;
-		padding-right: 10%;
+		padding: 0 10%;
 	}
-	.header {
-		font-size: 160%;
-	}
-	.middle {
-		font-size: 120%;
+	body {
+		font-size: 1.3em;
 	}
 }
 
 @media all and (min-width: 70em) {
   /* Style adjustments for viewports that meet the condition */
 	.content {
+		padding: 0;
 		max-width: 900px;
 		margin: 0 auto;
 	}
-	.header {
-		font-size: 180%;
-	}
-	.middle {
-		font-size: 140%;
+	body {
+		font-size: 1.4em;
 	}
 }

@@ -1,9 +1,12 @@
 extends layout
 
 block content
-	time[datetime=fmttime(Post.ShortPost.PubTime, "2006-01-02")] Published #{fmttime(Post.ShortPost.PubTime, "2006-01-02")}
-	if fmttime(Post.ShortPost.ModTime, "2006-01-02") != fmttime(Post.ShortPost.PubTime, "2006-01-02")
-		time[datetime=fmttime(Post.ShortPost.ModTime, "2006-01-02")] and last updated #{fmttime(Post.ShortPost.ModTime, "2006-01-02")}
 	article
 		[lang=Post.ShortPost.Lang] ? len(Post.ShortPost.Lang) > 0
 		| #{Post.Content}
+
+	p.meta
+		time[datetime=fmttime(Post.ShortPost.PubTime, "2006-01-02")] published #{fmttime(Post.ShortPost.PubTime, "2006-01-02")}
+		if fmttime(Post.ShortPost.ModTime, "2006-01-02") != fmttime(Post.ShortPost.PubTime, "2006-01-02")
+			time[datetime=fmttime(Post.ShortPost.ModTime, "2006-01-02")] and last updated #{fmttime(Post.ShortPost.ModTime, "2006-01-02")}
+	
