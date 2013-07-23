@@ -180,6 +180,9 @@ time, small {
 .middle {
 	text-align: center;
 }
+nav .middle {
+	margin-top: 0.4em;
+}
 .right {
 	float: right;
 	text-align: right;
