@@ -2,7 +2,7 @@
 Author: Martin Angers
 Title: Build a blog engine in Go
 Description: I built a static blog generator in Go. It's called trofaf because that's its name. Get this: it takes markdown files, reads some YAML front matter, and generates good ol' HTML files. I can already smell the Nobel. Anyway, the goal of this post is not to brag about the novelty of the thing, but to show how easy it is to get this done with Go's rich standard library and some fine userland packages.
-Date: 2013-07-15
+Date: 2013-07-22
 Lang: en
 ---
 
@@ -22,9 +22,9 @@ and I'd be pretty much spot on. But I won't do that, so let's dive.
 
 ## From Markdown To Markup
 
-How the package works is that it needs three subdirectories to exist in the current (working) directory, `posts`, `public` and `templates`. It takes markdown files from `posts`, runs them through the `templates`, and saves the output as static HTML files in `public`. Simple and standard enough. So before there even *is* a blog post to serve to the world, it must make this magical translation.
+How the package works is that it needs three subdirectories to exist in the current (working) directory, `posts`, `public` and `templates`. It takes markdown files from `posts`, runs them through the `templates`, and saves the output as static HTML files in `public`.
 
-First let's look at the data structures that are sent to the templates. This pretty much defines what can be displayed in a trofaf blog.
+Let's look at the data structures that are sent to the templates. This pretty much defines what can be displayed in a trofaf blog.
 
 ``` go
 // From tpldata.go
@@ -60,7 +60,7 @@ type TemplateData struct {
 }
 ```
 
-You get some website parameters (`SiteName`, `TagLine`, `RssURL`), the current post to display - along with its metadata, most of it coming from the YAML front matter -, a slice of recent posts (up to `Options.RecentPostsCount`, set using a command-line flag), and the previous and next post in chronological order. The `template.HTML` type for the content means that this field can be safely rendered unescaped by the template; underneath it is a `string`.
+You get some website parameters (`SiteName`, `TagLine`, `RssURL`), the current post to display - along with its metadata, most of it coming from the YAML front matter -, a slice of recent posts (up to `Options.RecentPostsCount`, set using a command-line flag as we'll see later), and the previous and next post in reverse chronological order. The `template.HTML` type for the content means that this field can be safely rendered unescaped by the template; underneath it is a `string`.
 
 When the engine finds a post to render, it calls `newLongPost(fi os.FileInfo)`. This method is responsible for filling the `LongPost` structure, so it loads the file identified by the `os.FileInfo` interface and it starts looking for the front matter. This is very simple to parse:
 
@@ -119,7 +119,7 @@ The possibility of having invalid files (that is, `*.md` files that don't have v
 
 Once the front matter is validated and stored safely in a map, the post structure is created with a slug derived from the name of the file. To process the actual markdown, and turn it into HTML, the [`blackfriday`][bf] library is used. It is a great parser, but the API could be a little more Go-ish (like take an `io.Reader` instead of a slice of bytes, and support writing to an `io.Writer` instead of returning a slice of bytes). Still, it does what it does very well.
 
-But the file is already partly consumed, thanks to our `readFrontMatter` function, so how can we get the rest? My first attempt was to simply call `ioutil.ReadAll(f)`, but it skipped valid parts of the file. This is obvious, in hindsight, since the `bufio.Scanner` used to read the front matter is buffered (you know, **buf**io), so more bytes were consumed than just the front matter. I ended up re-creating the rest of the file (the actual markdown part) by calling `s.Scan()` until the EOF, appending back the newline character to each line.
+But the file is already partly consumed, thanks to our `readFrontMatter` function, so how can we get the rest? My first attempt was to simply call `ioutil.ReadAll(f)` thinking (rightly so) that it would start loading from the current position, but it skipped valid parts of the file. This is obvious, in hindsight, since the `bufio.Scanner` used to read the front matter is buffered (you know, **buf**io), so more bytes were consumed than just the front matter. I ended up re-creating the rest of the file using this same `Scanner`, by calling `s.Scan()` until the EOF and appending back the newline character to each line.
 
 ``` go
 // From tpldata.go | newLongPost()
@@ -293,7 +293,7 @@ func run() {
 }
 ```
 
-At its heart is the [stdlib's `http.FileServer()` function][filesrv], that serves static file. Out-of-the-box, it does pretty much all that is needed, including serving an `index.html` file if it exists (otherwise it just renders the content of the directory). The rest is from my [ghost][] package and it's there just to spice things up a little, like supporting gzip encoding, serving a status code 500 on panics, logging the requests' data and caching the favicon.
+At its heart is the [stdlib's `http.FileServer()` function][filesrv], that serves static files. Out-of-the-box, it does pretty much all that is needed, including serving an `index.html` file if it exists (otherwise it just renders the content of the directory). The rest is from my [ghost][] package and it's there just to spice things up a little, like supporting gzip encoding, serving a status code 500 on panics, logging the requests' data and caching the favicon.
 
 ## Wherever This Flag's Flown
 
@@ -316,7 +316,7 @@ type options struct {
 
 ## Blog Away
 
-That's all there is to it! I've skipped over some implementation details, but the essential parts have been covered. You end up with a static blog generator that parses markdown and YAML front matter, that watches for changes and generates an up-to-date website on the fly, and serves it efficiently to the whole world. Use it as-is if you like things simple and minimal, or fork and enhance as you see fit!
+That's all there is to it! I've skipped over some implementation details, but the essential parts have been covered. You end up with a static blog generator that parses markdown and YAML front matter, that watches for changes and generates an up-to-date website on the fly, and serves it efficiently to the whole world. Use it as-is if you like things simple and minimal, or [fork and enhance][trofaf] as you see fit!
 
 [wiki]: https://code.google.com/p/go-wiki/wiki/SliceTricks
 [gbt]: https://github.com/krautchan/gbt

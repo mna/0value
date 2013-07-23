@@ -10,63 +10,64 @@ html.no-js[lang="en"]
 		link[rel="stylesheet"][href="/css/normalize.css"]
 		link[rel="stylesheet"][href="/css/main.css"]
 		link[rel="stylesheet"][href="/css/fontello.css"]
-		link[rel="stylesheet"][href="//fonts.googleapis.com/css?family=Telex"]
+		link[rel="stylesheet"][href="http://fonts.googleapis.com/css?family=Sintony:400,700"]
 		link[rel="alternate"][href=RssURL][type="application/rss+xml"][title="RSS"]
 		script[src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"]
 	body
-		<!--[if lt IE 7]>
-			<p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
-		<![endif]-->
+		div.content
+			<!--[if lt IE 7]>
+				<p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+			<![endif]-->
 
-		div.header
-			div.title
-				a[href="/"] #{SiteName}
-				br
-				span.tagline #{TagLine}
+			header
+				hgroup
+					div.left.title
+						h1
+							a[href="/"] #{SiteName}
+						h2 #{TagLine}
+					div.right.social
+						a.huge[href="https://github.com/PuerkitoBio"][title="@PuerkitoBio on GitHub"]
+							span.icon-github-circled
+						a.huge[href="https://twitter.com/PuerkitoBio"][title="@PuerkitoBio on Twitter"]
+							span.icon-twitter
+					div.clearfix
 
-		nav
-			div.container
-				div.left
-					if Next
-						a.huge[href=Next.Slug][title=Next.Title] «
-					else
-						span.huge •
-				div.middle
-					span #{Post.ShortPost.Title}
-				div.right
-					if Prev
-						a.huge[href=Prev.Slug][title=Prev.Title] »
-					else
-						span.huge •
-				div.clearfix
+			hr
 
-		main
-			block content
+			nav
+				div.container
+					div.left.quarter
+						if Next
+							a.huge[href=Next.Slug][title=Next.Title] «
+						else
+							span.huge •
+					div.middle.big.half
+						span #{Post.ShortPost.Title}
+					div.right.quarter
+						if Prev
+							a.huge[href=Prev.Slug][title=Prev.Title] »
+						else
+							span.huge •
+					div.clearfix
 
-		footer
-			div.container
-				div.left
-					a.huge[href="https://github.com/PuerkitoBio"][title="@PuerkitoBio on GitHub"]
-						span.icon-github-circled
-				div.right
-					a.huge[href="https://twitter.com/PuerkitoBio"][title="@PuerkitoBio on Twitter"]
-						span.icon-twitter
-				div.middle
-					if Recent
-						h3 Recent posts
-						ul
-							each $p in Recent
-								li
-									a[href=$p.Slug] #{$p.Title}
-				div.clearfix
-			div.container.copyright
-				small
-					| built with 
-					a[href="https://github.com/PuerkitoBio/trofaf"] trofaf
-					| .
-				br
-				small © 2013 Martin Angers
-		
+			hr
+
+			main
+				block content
+
+			hr
+
+			footer
+				if Recent
+					ul.container.middle
+						each $p in Recent
+							li
+								time[datetime=fmttime($p.ShortPost.PubTime, "2006-01-02")] #{fmttime($p.ShortPost.PubTime, "2006-01-02")}
+								a[href=$p.Slug] #{$p.Title}
+				div.container.middle
+					small
+						| © 2013 Martin Angers, built with 
+						a[href="https://github.com/PuerkitoBio/trofaf"] trofaf
 		script
 			if (document.querySelectorAll && "classList" in document.documentElement) {
 				codes = document.querySelectorAll("pre code");
