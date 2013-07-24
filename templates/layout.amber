@@ -24,9 +24,9 @@ html.no-js[lang="en"]
 							a[href="/"] #{SiteName}
 						h2 #{TagLine}
 					div.right.social
-						a.huge[href="https://github.com/PuerkitoBio"][title="@PuerkitoBio on GitHub"]
+						a.huge.github[href="https://github.com/PuerkitoBio"][title="@PuerkitoBio on GitHub"]
 							span.icon-github-circled
-						a.huge[href="https://twitter.com/PuerkitoBio"][title="@PuerkitoBio on Twitter"]
+						a.huge.twitter[href="https://twitter.com/PuerkitoBio"][title="@PuerkitoBio on Twitter"]
 							span.icon-twitter
 					div.clearfix
 

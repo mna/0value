@@ -1,23 +1,29 @@
 @import "normalize.scss";
 @import "fontello.scss";
 @import "base.scss";
+@import "compass/css3";
+
+$normalFont: 'Sintony', sans-serif;
+$codeFont: "Source Code Pro", "Courier New", monospace;
+$normalFontSize: 1.2em;
 
 $normalBgColor: rgb(245, 245, 245);
-$codeBgColor: rgb(230, 230, 230);
+$codeBgColor: rgb(240, 240, 240);
+$twitterColor: #4099FF;
+$githubColor: rgb(96, 176, 68);
+
 $normalFontColor: black;
 $linkFontColor: rgb(0, 0, 136);
 $lighterFontColor: rgb(117, 117, 117);
-$quoteBorderColor: rgb(117, 117, 117);
 $codeFontColor: rgb(70, 70, 70);
 $metaFontColor: rgb(70, 70, 70);
 
-$normalFont: 'Sintony', sans-serif;
-$normalFontSize: 1.2em;
 $normalLineHeight: 1.5;
 $metaLineHeight: 1.0;
 $codeLineHeight: 1.0;
-$codeFont: "Source Code Pro", "Courier New", monospace;
+
 $codeBorderColor: rgb(200, 200, 200);
+$quoteBorderColor: rgb(117, 117, 117);
 
 body {
 	font: {
@@ -83,9 +89,9 @@ code {
 }
 pre {
 	background-color: $codeBgColor;
-	padding: 10px;
-	border-radius: 5px;
-	border: 1px solid $codeBorderColor;
+	padding: 5px;
+	@include border-radius(5px);
+	border: 5px solid darken($codeBorderColor, 10%);
 	overflow: auto;
 	width: auto;
 	line-height: 1.1;
@@ -123,6 +129,19 @@ nav .middle {
 }
 .social {
 	width: 40%;
+	a.huge {
+		display: inline-block;
+		@include single-transition(all, 0.4s, ease);
+		&:hover {
+			&.github {
+				color: $githubColor;
+			}
+			&.twitter {
+				color: $twitterColor;
+			}
+			@include transform(scale(1.1) rotate(10deg));
+		}
+	}
 }
 .half {
 	width: 50%;
