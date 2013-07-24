@@ -1,0 +1,153 @@
+@import "normalize.scss";
+@import "fontello.scss";
+@import "base.scss";
+
+$normalBgColor: rgb(245, 245, 245);
+$codeBgColor: rgb(230, 230, 230);
+$normalFontColor: black;
+$linkFontColor: rgb(0, 0, 136);
+$lighterFontColor: rgb(117, 117, 117);
+$quoteBorderColor: rgb(117, 117, 117);
+$codeFontColor: rgb(70, 70, 70);
+
+body {
+	font-family: 'Sintony', sans-serif;
+  font-size: 1.2em;
+  line-height: 1.5;
+	color: $normalFontColor;
+  background-color: $normalBgColor;
+}
+
+.content {
+	padding: 0 10px;
+}
+.container {
+	width: 100%;
+}
+a {
+  color: $linkFontColor;
+  text-decoration: none;
+	&:hover {
+  	text-decoration: underline;
+	}
+}
+header {
+	a, a:hover {
+		color: $normalFontColor;
+		text-decoration: none;
+	}
+	h1 {
+		font-weight: bold;
+		font-size: 110%;
+		padding: 0;
+		margin: 3px;
+	}
+	h2 {
+		font-size: 80%;
+		color: $lighterFontColor;
+		padding: 0;
+		margin: 3px;
+	}
+}
+.meta {
+	line-height: 1.0;
+}
+blockquote {
+	margin: 0;
+  border-left: 5px solid $quoteBorderColor;
+	p {
+		margin-left: 10px;
+		color: $lighterFontColor;
+	}
+}
+code {
+  color: $codeFontColor;
+	background-color: $codeBgColor;
+  font-family: "Source Code Pro", "Courier New", monospace;
+	border: 1px solid rgb(200, 200, 200);
+	margin: 1px;
+	padding: 1px 3px;
+	font-size: 85%;
+	border-radius: 3px;
+}
+pre {
+	background-color: $codeBgColor;
+	padding: 10px;
+	border-radius: 5px;
+	border: 1px solid rgb(200, 200, 200);
+	overflow: auto;
+	width: auto;
+	line-height: 1.1;
+
+	code {
+		background-color: inherit;
+		border: 0;
+		margin: 0;
+		padding: 0;
+	}
+}
+footer {
+	min-height: 200px;
+	margin: 20px 0;
+}
+time, small {
+	color: rgb(70, 70, 70);
+	font-size: 70%;
+}
+.left, .middle {
+	float: left;
+}
+.middle {
+	text-align: center;
+}
+nav .middle {
+	margin-top: 0.4em;
+}
+.right {
+	float: right;
+	text-align: right;
+}
+.title {
+	width: 60%;
+}
+.social {
+	width: 40%;
+}
+.half {
+	width: 50%;
+}
+.quarter {
+	width: 25%;
+}
+.huge {
+	font-size: 200%;
+}
+.big {
+	font-size: 110%;
+}
+ul {
+	padding: 0;
+	margin: 20px 0;
+	list-style: none;
+}
+
+@media all and (min-width: 40em) {
+	.content {
+		padding: 0 10%;
+	}
+	body {
+		font-size: 1.3em;
+	}
+}
+
+@media all and (min-width: 70em) {
+  /* Style adjustments for viewports that meet the condition */
+	.content {
+		padding: 0;
+		max-width: 900px;
+		margin: 0 auto;
+	}
+	body {
+		font-size: 1.4em;
+	}
+}

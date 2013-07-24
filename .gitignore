@@ -2,6 +2,7 @@
 *.swo
 *.swp
 public/*
+.sass-cache/*
 !public/css/
 !public/font/
 !public/js/
