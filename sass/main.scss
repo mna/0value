@@ -9,11 +9,22 @@ $linkFontColor: rgb(0, 0, 136);
 $lighterFontColor: rgb(117, 117, 117);
 $quoteBorderColor: rgb(117, 117, 117);
 $codeFontColor: rgb(70, 70, 70);
+$metaFontColor: rgb(70, 70, 70);
+
+$normalFont: 'Sintony', sans-serif;
+$normalFontSize: 1.2em;
+$normalLineHeight: 1.5;
+$metaLineHeight: 1.0;
+$codeLineHeight: 1.0;
+$codeFont: "Source Code Pro", "Courier New", monospace;
+$codeBorderColor: rgb(200, 200, 200);
 
 body {
-	font-family: 'Sintony', sans-serif;
-  font-size: 1.2em;
-  line-height: 1.5;
+	font: {
+		family: $normalFont;
+		size: $normalFontSize;
+	}
+  line-height: $normalLineHeight;
 	color: $normalFontColor;
   background-color: $normalBgColor;
 }
@@ -50,7 +61,7 @@ header {
 	}
 }
 .meta {
-	line-height: 1.0;
+	line-height: $metaLineHeight;
 }
 blockquote {
 	margin: 0;
@@ -63,8 +74,8 @@ blockquote {
 code {
   color: $codeFontColor;
 	background-color: $codeBgColor;
-  font-family: "Source Code Pro", "Courier New", monospace;
-	border: 1px solid rgb(200, 200, 200);
+  font-family: $codeFont;
+	border: 1px solid $codeBorderColor;
 	margin: 1px;
 	padding: 1px 3px;
 	font-size: 85%;
@@ -74,7 +85,7 @@ pre {
 	background-color: $codeBgColor;
 	padding: 10px;
 	border-radius: 5px;
-	border: 1px solid rgb(200, 200, 200);
+	border: 1px solid $codeBorderColor;
 	overflow: auto;
 	width: auto;
 	line-height: 1.1;
@@ -91,7 +102,7 @@ footer {
 	margin: 20px 0;
 }
 time, small {
-	color: rgb(70, 70, 70);
+	color: $metaFontColor;
 	font-size: 70%;
 }
 .left, .middle {
@@ -141,7 +152,6 @@ ul {
 }
 
 @media all and (min-width: 70em) {
-  /* Style adjustments for viewports that meet the condition */
 	.content {
 		padding: 0;
 		max-width: 900px;
