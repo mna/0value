@@ -5,9 +5,8 @@
 
 @font-face {
 	font-family: 'Sintony';
-	src: url('../font/Sintony-Regular.eot'); 
     src: url('../font/Sintony-Regular.eot?#iefix') format('embedded-opentype'),
-         url('../font/Sintony-Regular.svg#Sintony') format('svg'),
+         url('../font/Sintony-Regular.svg') format('svg'),
          url('../font/Sintony-Regular.woff') format('woff'),
          url('../font/Sintony-Regular.ttf')  format('truetype');
   font-weight: 400;
@@ -15,9 +14,8 @@
 }
 @font-face {
 	font-family: 'Sintony';
-	src: url('../font/Sintony-Bold.eot'); 
     src: url('../font/Sintony-Bold.eot?#iefix') format('embedded-opentype'),
-         url('../font/Sintony-Bold.svg#Sintony-Bold') format('svg'),
+         url('../font/Sintony-Bold.svg') format('svg'),
          url('../font/Sintony-Bold.woff') format('woff'),
          url('../font/Sintony-Bold.ttf')  format('truetype');
   font-weight: 700;
@@ -160,6 +158,8 @@ nav .middle {
 			&.twitter {
 				color: $twitterColor;
 			}
+			background-color: lighten($normalBgColor, 10%);
+			@include single-box-shadow($normalFontColor, 5px, 5px, 5px);
 			@include transform(scale(1.1) rotate(10deg));
 		}
 	}
