@@ -3,6 +3,27 @@
 @import "base.scss";
 @import "compass/css3";
 
+@font-face {
+	font-family: 'Sintony';
+	src: url('../font/Sintony-Regular.eot'); 
+    src: url('../font/Sintony-Regular.eot?#iefix') format('embedded-opentype'),
+         url('../font/Sintony-Regular.svg#Sintony') format('svg'),
+         url('../font/Sintony-Regular.woff') format('woff'),
+         url('../font/Sintony-Regular.ttf')  format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+	font-family: 'Sintony';
+	src: url('../font/Sintony-Bold.eot'); 
+    src: url('../font/Sintony-Bold.eot?#iefix') format('embedded-opentype'),
+         url('../font/Sintony-Bold.svg#Sintony-Bold') format('svg'),
+         url('../font/Sintony-Bold.woff') format('woff'),
+         url('../font/Sintony-Bold.ttf')  format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
 $normalFont: 'Sintony', sans-serif;
 $codeFont: "Source Code Pro", "Courier New", monospace;
 $normalFontSize: 1.2em;

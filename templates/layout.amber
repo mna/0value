@@ -8,7 +8,6 @@ html.no-js[lang="en"]
 		meta[name="description"][content=Post.ShortPost.Description]
 		meta[name="viewport"][content="width=device-width, initial-scale=1"]
 		link[rel="stylesheet"][href="/css/main.css"]
-		link[rel="stylesheet"][href="http://fonts.googleapis.com/css?family=Sintony:400,700"]
 		link[rel="alternate"][href=RssURL][type="application/rss+xml"][title="RSS"]
 		script[src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"]
 	body
