@@ -12,7 +12,7 @@ I have a funny-weird relationship with the Lua language, I have never written an
 
 > Coroutines are computer program components that generalize subroutines to allow multiple entry points for suspending and resuming execution at certain locations.
 
-Now, I hear the gophers scream "CHANNELS"! Yes, this is mostly academic, and spoiler alert: channels will be summoned, but the goal is to build a higher-level abstraction that mimics as close as possible Lua's `coroutine.*` API and features.
+Now, I can already hear the gophers scream "CHANNELS"! Yes, spoiler alert, channels will be summoned, but the goal is to build a higher-level abstraction that mimics as close as possible Lua's `coroutine.*` API and features.
 
 ## Please Allow Me To Introduce Myself
 
@@ -32,9 +32,9 @@ An important point to remember is that Lua coroutines are **not** about parallel
 
 ## Go Your Own Way
 
-Let's think for a second about what is needed to implement a coroutine. Basically, when `resume()` is called, the caller blocks on this call until a matching `yield()` (or `return`, which is semantically equivalent to a final `yield()` before the coroutine dies) is called from within the coroutine. Similarly, a call to `yield()` from within the coroutine blocks its execution at this point until a call to `resume()` is made by the caller. Additionnally, values can be exchanged at these blocking points.
+Let's think for a second about what is needed to implement a coroutine. Basically, when `resume()` is called, the caller blocks on this call until a matching `yield()` (or `return`, which is semantically equivalent to a final `yield()` before the coroutine dies) is called from within the coroutine. Similarly, a call to `yield()` from within the coroutine blocks its execution at this point until a call to `resume()` is made by the caller. Additionally, values can be exchanged at these meeting points.
 
-The Go Way to do this is with an [unbuffered channel][chan]. It allows sending and receiving values, and when unbuffered, it blocks on receive until a value is available on the channel (or the channel is closed). So let's build a Go implementation that yields an integer. It could look like this:
+The Go Way to do this is with an [unbuffered channel][chan]. It allows sending and receiving values, and when unbuffered, it blocks on receive until a value is available on the channel (or until the channel is closed). So let's build a Go implementation that yields an integer. The data structure could look like this:
 
 ``` go
 type *Coroutine struct {
@@ -65,7 +65,7 @@ var (
 	}
 )
 
-// Bonus: Stringer interface implementation for human-readable formatting
+// Bonus: fmt.Stringer interface implementation for human-readable formatting
 func (s Status) String() string {
 	// Will return empty string for unknown statuses
 	return statusNms[s]
@@ -112,7 +112,7 @@ func (c *Coroutine) Yield(i int) {
 }
 ```
 
-To block until it must resume, the same `c.yld` channel could possibly be used, but I think it's cleaner to have separate channels that are intended to always work in the same direction: `yld` to send to the caller, `rsm` to send to the coroutine.
+To block until it must resume, the same `c.yld` channel could possibly be used, but I think it's cleaner to have separate channels that are intended to always work in the same direction: `c.yld` to send to the caller, `c.rsm` to send to the coroutine.
 
 Another thing to consider is that unlike Lua, [whose garbage collector can track zombie coroutines][luagc] and eventually wipe them off, Go will [leak goroutines that are stuck forever][goleak]. It would be nice to provide a way to explicitly kill a Go coroutine (which as we'll see in a second is built using a goroutine) when it is no longer needed.
 
@@ -121,9 +121,9 @@ Here's a rewrite of the basic implementation, taking these points into account:
 ``` go
 var (
 	// Common errors returned by the coroutine
-	ErrEndOfCoro    = fmt.Errorf("coroutine terminated")
-	ErrInvalidState = fmt.Errorf("coroutine is in invalid state")
-	ErrCancel       = fmt.Errorf("coroutine canceled")
+	ErrEndOfCoro    = errors.New("coroutine terminated")
+	ErrInvalidState = errors.New("coroutine is in invalid state")
+	ErrCancel       = errors.New("coroutine canceled")
 )
 
 type Coroutine struct {
@@ -242,11 +242,11 @@ func (c *Coroutine) run() {
 }
 ```
 
-There's still a major problem with this implementation. How does the coroutine function call `Yield()`? In Lua, `coroutine.yield()` has hooks into the C runtime and knows what is the current coroutine and yields it. To implement this in Go as a userland library, a different approach is required. We can require the coroutine function to accept a `*Coroutine` type as first argument, but then it means that it can call `Yield()` just fine, but also `Resume()` and `Cancel()`, which are meant to be called from the coroutine's caller. Turns out there's a simple fix for this.
+There's still a major problem with this implementation. How does the coroutine function call `Yield()`? In Lua, `coroutine.yield()` has hooks into the C runtime and knows what is the current coroutine and yields it. To implement this in Go as a userland library, a different approach is required. I thought about making the coroutine function accept a `*Coroutine` type as first argument, but then it means that it can call `Yield()` just fine, but also `Resume()` and `Cancel()`, which are meant to be called from the coroutine's caller. Turns out there's a simple fix for this.
 
 ## Here We Stand, Worlds Apart
 
-Even though the methods `Yield()`, `Resume()` and `Cancel()` all manipulate our `*Coroutine` structure, they're really meant to be used in distinct contexts. Using interfaces and a private, unexported type, we can expose just the right stuff in each context. Here's the relevant parts of the same implementation, rearranged with this segregation in mind:
+Even though the methods `Yield()`, `Resume()` and `Cancel()` all manipulate our `*Coroutine` structure, they're really meant to be used in distinct contexts. Using interfaces and a private, unexported type, we can expose just the right stuff in each context. Here are the relevant parts of the same implementation, rearranged with this segregation in mind:
 
 ``` go
 // The Yielder interface is to be used only from inside a coroutine's
@@ -304,11 +304,11 @@ func New(fn Fn) Caller {
 }
 ```
 
-The rest of the implementation stays the same. You can find this source code on github, in my [gocoro][] repo. This simple integer-yielding implementation is in the `simple-int` branch.
+The rest of the implementation stays the same. You can find this source code on github, in my [gocoro][] repo. This simple integer-yielding implementation is in the [`simple-int` branch][sibr].
 
 ## The Call Of Cthulua
 
-From a caller's perspective, here's a very simple example of how the *gocoro* implementation is used:
+From a caller's perspective, here's a very simple (and silly) example of how the *gocoro* implementation is used:
 
 ``` go
 package main
@@ -334,13 +334,13 @@ func main() {
 }
 ```
 
-Nice, no? But wouldn't it be better to capitalize on Go's `range` keyword when the coroutine is used to loop over the values like this? That's the point of `coroutine.wrap()` in Lua, to return an iterator.
+Nice, no? Of course you have to imagine the `corofn` doing something a little more involved, but you get the feeling. Wouldn't it be better, though, to capitalize on Go's `range` keyword when the coroutine is used to loop over the values like this? That's the point of `coroutine.wrap()` in Lua, to return an iterator.
 
 ## Here Comes The Range Again
 
 In Go, [the `range` keyword works only on a select few built-in types][range], namely: arrays, slices, maps, strings and (receivable) channels. Maps and strings make no sense in this case. Slices could be tempting, but that defeats the whole purpose of collaborative execution (the coroutine would need to fill the whole slice before iteration can take place). So I guess channels will be relied upon once again!
 
-Building on the current implementation of coroutines, adding an iterator function is surprisingly easy. After, it's simply a matter of having a function automatically resume the coroutine once the value is read from the channel. Once again, an unbuffered channel will be our friend, since it will block on a send until the channel has been read.
+Building on our current implementation of coroutines, adding an iterator function is surprisingly easy by returning a channel to iterate upon. After, it's simply a matter of having a function automatically resume the coroutine once the value is read from the channel. Once again, an unbuffered channel will be our friend, since it will block on a send until a read is ready.
 
 ``` go
 // Public constructor of an Iterator coroutine.
@@ -373,13 +373,13 @@ func (c *coroutine) iter(ch chan int) {
 }
 ```
 
-I haven't tried it, but maybe it could've been implemented by exposing the existing `c.yld` channel. Still, I like the idea to build this on top of the available coroutine API (exposing `c.yld` would've meant tweaking the internals, since a call to `Resume()` consumes the value of the yield channel). The big downside, as noted in the comments, is the impossibility to cancel the coroutine, nor to handle errors conveniently, unless the `for v := range NewIter(fn)` goal is abandoned in order to return multiple values.
+I haven't tried it, but maybe it could've been implemented by exposing the existing `c.yld` channel. Still, I like the idea to build this on top of the available coroutine API (exposing `c.yld` would've meant tweaking the internals, since a call to `Resume()` consumes the value of the yield channel). The big downside, as noted in the comments, is the impossibility to cancel the coroutine, nor to handle errors conveniently, unless the `for v := range NewIter(fn)` goal is abandoned in order to return multiple values or a richer, range-unfriendly data structure which yet again defeats the whole purpose.
 
 ## Running On Empty
 
-This is a very specific implementation of coroutines in Go. It yields a single integer. Unlike Lua, it doesn't allow passing additional values in calls `Yield()` or `Resume()`. Lua being a dynamically-typed language, any number of any type of arguments can be used in those calls, and the coroutine's function can have any number of arguments and return values too.
+Up until now, this has been a very specific implementation of coroutines in Go. It yields a single integer. Unlike Lua, it doesn't allow passing additional values in calls `Yield()` or `Resume()`. Lua being a dynamically-typed language, any number of any type of arguments can be used in those calls, and the coroutine's function can have any number of arguments and return values too.
 
-Well, Go is statically-typed, but if you want to achieve this kind of "anything goes" behaviour, you will sprinkle variadic empty interface arguments over those method signatures. And then you will use [type assertions][type] just about everywhere. I've implemented such a generic version based on the one just discussed, in the [*generic* branch of the gocoro repo][gocoro]. The main differences are:
+Well, Go is statically-typed, but if you want to achieve this kind of "anything goes" behaviour, you have to sprinkle variadic empty interface arguments over those method signatures. And then you use [type assertions][type] just about everywhere. I've implemented such a generic version based on the simple integer one, in the [*generic* branch of the gocoro repo][genbr]. The main differences are:
 
 ``` go
 // The generic signature of the coroutine function now accepts any
@@ -404,9 +404,33 @@ Yield(...interface{}) interface{}
 Resume(...interface{}) (interface{}, error)
 ```
 
-Since unbuffered channels must pass a single value, they pass en empty interface, which would be the slice of empty interface values passed to either `Yield()` or `Resume()` (because variadic parameters are basically syntactic sugar for a slice of the specified type). However, to make handling the case of a single value more convenient, I send the single value into the channel directly in this case instead of sending the slice of empty interfaces. It makes type assertions easier on the caller. You can see examples of how to use this generic version in `generic_test.go` in the generic branch.
+Since unbuffered channels must pass a single value, they pass en empty interface, which would be the slice of empty interface values passed to either `Yield()` or `Resume()` (because [variadic parameters are basically syntactic sugar for a slice of the specified type][vargo]). However, to make handling the case of a single value more convenient, I send the single value into the channel directly in this case instead of sending the slice of empty interfaces. It makes type assertions easier on the caller:
 
-Another implementation option would be to use Go's `reflect` package. I've started experimenting with the `MakeFunc()` function, and something could probably be built to make the coroutine pattern more generic while still being strongly-typed, something along the lines of:
+``` go
+func (c *coroutine) Resume(args ...interface{}) (interface{}, error) {
+	switch c.status {
+	case StSuspended:
+		if !c.started {
+			// -truncated-
+		} else {
+			// Restart, so simply set status back to Running and unblock the waiting
+			// goroutine by sending on the resume channel.
+			c.status = StRunning
+			if len(args) == 1 {
+				// Slightly more convenient: send the one and only arg instead of a
+				// slice of empty interfaces.
+				c.rsm <- args[0]
+			} else {
+				c.rsm <- args
+			}
+		}
+		// -truncated-
+}
+```
+
+Thanks to this, instead of having assertions that look like `val.([]interface{})[0].(int)` you can do `val.(int)`. You can see examples of how to use this version in `generic_test.go` in the generic branch.
+
+Another implementation option would be to use [Go's `reflect` package][reflect]. I've started experimenting with the `MakeFunc()` function, and something could probably be built to make the coroutine pattern more generic while still being strongly-typed, something along the lines of:
 
 ``` go
 // func New(func(Tin) Tout, yldPtr interface{}, rsmPtr interface{}) Caller =>
@@ -418,7 +442,7 @@ Another implementation option would be to use Go's `reflect` package. I've start
 // - It is the calling code's responsibility to provide the yield function to the coroutine's function
 ```
 
-But I haven't taken it any further yet (see the `make-func` branch of the repo for *eventual* progress on this front). Feel free to [send pull requests][pr] if you want to share other ways to implement this.
+But I haven't taken it any further yet (see [the `make-func` branch][mfbr] of the repo for *eventual* progress on this front). Feel free to [send pull requests][pr] or [file an issue][issue] for discussion if you want to share other ways to implement this.
 
 [coro]: http://www.lua.org/pil/9.html
 [lune]: https://github.com/PuerkitoBio/lune
@@ -430,3 +454,10 @@ But I haven't taken it any further yet (see the `make-func` branch of the repo f
 [range]: http://golang.org/ref/spec#For_statements
 [type]: http://golang.org/ref/spec#Type_assertions
 [pr]: https://github.com/PuerkitoBio/gocoro/pulls
+[sibr]: https://github.com/PuerkitoBio/gocoro/tree/simple-int
+[genbr]: https://github.com/PuerkitoBio/gocoro/tree/generic
+[vargo]: http://golang.org/ref/spec#Passing_arguments_to_..._parameters
+[mfbr]: https://github.com/PuerkitoBio/gocoro/tree/make-func
+[issue]: https://github.com/PuerkitoBio/gocoro/issues
+[reflect]: http://golang.org/pkg/reflect/
+
