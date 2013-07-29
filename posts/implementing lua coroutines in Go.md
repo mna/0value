@@ -379,7 +379,7 @@ I haven't tried it, but maybe it could've been implemented by exposing the exist
 
 Up until now, this has been a very specific implementation of coroutines in Go. It yields a single integer. Unlike Lua, it doesn't allow passing additional values in calls `Yield()` or `Resume()`. Lua being a dynamically-typed language, any number of any type of arguments can be used in those calls, and the coroutine's function can have any number of arguments and return values too.
 
-Well, Go is statically-typed, but if you want to achieve this kind of "anything goes" behaviour, you have to sprinkle variadic empty interface arguments over those method signatures. And then you use [type assertions][type] just about everywhere. I've implemented such a generic version based on the simple integer one, in the [*generic* branch of the gocoro repo][genbr]. The main differences are:
+Well, Go is statically-typed, but if you want to achieve this kind of "anything goes" behaviour, you have to sprinkle variadic empty interface arguments over those method signatures. And then you use [type assertions][type] just about everywhere. I've implemented such a generic version based on the simple integer one, in the [`generic` branch of the gocoro repo][genbr]. The main differences are:
 
 ``` go
 // The generic signature of the coroutine function now accepts any
