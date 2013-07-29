@@ -96,6 +96,14 @@ blockquote {
 		color: $lighterFontColor;
 	}
 }
+a code {
+	@include single-transition(all, 0.2s, ease);
+}
+a:hover code {
+	background-color: $linkFontColor;
+	color: $normalBgColor;
+	text-decoration: none;
+}
 code {
   color: $codeFontColor;
 	background-color: $codeBgColor;
