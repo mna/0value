@@ -1,7 +1,7 @@
 ---
 Author: Martin Angers
 Title: Implementing Lua coroutines in Go
-Date: 2013-07-30
+Date: 2013-07-29
 Description: I have a funny-weird relationship with the Lua language, I have never written anything remotely useful with it and am unfamiliar with its syntax, but I know its internals quite well, thanks to my obsession with virtual machines and my unfinished attempt at building the Lua VM in Go. Anyway, Lua has this nice feature called coroutines, and I'll let wikipedia introduce it to those unfamiliar with the concept...
 Lang: en
 ---
