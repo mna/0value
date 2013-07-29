@@ -179,7 +179,9 @@ nav .middle {
 ul {
 	padding: 0;
 	margin: 20px 0;
-	list-style: none;
+	&.container{
+		list-style: none;
+	}
 }
 
 @media all and (min-width: 40em) {
