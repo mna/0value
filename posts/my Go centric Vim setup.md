@@ -101,10 +101,10 @@ Am I missing some Vim-awesomeness, especially Go-related? Drop me a line [on Twi
 [hnpckctrl]: https://sublime.wbond.net/news#2013-08-09-Package_Control_2
 [emacs]: https://www.gnu.org/software/emacs/manual/emacs.html
 [pikedoc]: http://code.google.com/p/rspace.cmd/doc
-[nerdimg]: /img/nerdtree.png
+[nerdimg]: /img/nerdtree.jpg
 [gotags]: https://github.com/jstemmer/gotags
 [tagbar]: http://majutsushi.github.io/tagbar/
-[tagbarimg]: /img/tagbar.png
+[tagbarimg]: /img/tagbar.jpg
 [supertab]: https://github.com/ervandew/supertab
 [autoclose]: https://github.com/Townk/vim-autoclose
 [yankstack]: https://github.com/maxbrunsfeld/vim-yankstack
