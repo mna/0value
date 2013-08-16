@@ -2,7 +2,7 @@
 Author: Martin Angers
 Title: My (Go-centric) Vim Setup
 Date: 2013-08-15
-Description: 
+Description: This is the result of quite a few googling safaris, and hopefully it can prove helpful to others wanting to write (especially Go) code in Vim. I'm sure this is just scratching the surface of what can (let alone should!) be done, and text editing being the subjective beast that it is, YMMV, but here goes, without further ado, I present to you my glorious Vim setup!
 Lang: en
 ---
 
