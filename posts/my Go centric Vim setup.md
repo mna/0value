@@ -12,29 +12,29 @@ A while ago I was all about [Sublime Text 2][st]. Text editing was a solved thin
 
 Don't get me wrong: ST2 (and presumably ST3, I haven't closely followed its evolution) is a wonderful text editor, worth every penny of the ±60$ that I sent to a fellow programmer (I see it's now 70$, still worth it IMO). It's even *cheap* by today's monthly subscription-based SaaS standard (5$/month, if you do the math). It's just that, faced with a decision, I decided to keep an open mind and look at alternatives, especially knowing that free behemoths - in every sense of *free* and *behemoths*, namely `emacs` and `vim` - were touted by many respected knights of the curly braces. Long story short, I dove into emacs' [daunting manual][emacs], came back impressed by the kill ring but never really clicked on a metaphysical level, while armed with a Vim cheat sheet, [Yan Pritzker's post][speak] and an indomitable will, I found my home with Vim.
 
-The next step was to make it truly mine. This is the result of quite a few googling safaris, and hopefully it can prove helpful to others wanting to write (mainly) Go code in Vim. I'm sure this is just scratching the surface of what can (let alone *should*!) be done, and text editing being the subjective beast that it is, YMMV, but here goes, without further ado, I present to you my glorious Vim setup!
+The next step was to make it truly mine. This is the result of quite a few googling safaris, and hopefully it can prove helpful to others wanting to write (especially Go) code in Vim. I'm sure this is just scratching the surface of what can (let alone *should*!) be done, and text editing being the subjective beast that it is, YMMV, but here goes, without further ado, I present to you my glorious Vim setup!
 
 1. **Go's official Vim plugins** : the Go team provides a nice collection of Vim plugins [as part of Go's release tarball][govim]. These will get you sytax highlighting, `:Godoc` support, automatic indentation, `:Import` and `:Drop` commands to add/remove import paths, etc. To be honest, I prefer to use [Rob Pike's handy `doc` command][pikedoc] instead of `Godoc` to look for quick documentation (using `!doc <something>` from the Vim command).
 
-2. **NERD Tree** : [this plugin][nerd] brings a useful hierarchical file and directory explorer side window, along with many file manipulation actions. Since I usually start vim (often `MacVim` in my case) from the command line, from the directory at the root of my project, my NERD Tree is automatically scoped to display this directory and its children.
+2. **NERD Tree** : [this plugin][nerd] brings a useful hierarchical file and directory explorer sidebar, along with many file manipulation actions (create, move, delete, etc.). Since I start vim (usually `MacVim` in my case) from the command line, from the directory at the root of my project, my NERD Tree is automatically scoped to display this directory and its children.
 
-    Because I almost always navigate files inside Vim using this plugin, I set it to open automatically at startup with `au VimEnter * NERDTreeToggle` in my `.vimrc` file, and I map the NERD Tree visibility toggle key to `F3` for easy access (`nmap <F3> :NERDTreeToggle<CR>`).
+    And because I almost always navigate files inside Vim using this plugin, I set it to open automatically at startup with `au VimEnter * NERDTreeToggle` in my `.vimrc` file, and I map the NERD Tree toggle key to `F3` for easy access (`nmap <F3> :NERDTreeToggle<CR>`).
 
     ![NERD Tree Preview][nerdimg]
 
-3. **Gocode** : [Gocode][] is a *daemon* that provides context-sensitive auto-complete features to text editors. It is a generic tool depended upon by many text editors (including Sublime Text) for rich Go language support. Naturally, it supports Vim and emacs. Follow the instructions on Github to install and setup with Vim.
+3. **Gocode** : [Gocode][] is a daemon that provides context-sensitive Go language auto-completion to text editors. It is a generic tool depended upon by many text editors (including Sublime Text with `GoSublime`), and naturally it supports Vim and emacs. Follow the instructions on Github to install and setup with Vim.
 
 4. **gofmt on save** : if you write Go code, you absolutely should use `gofmt` to format your code to the canonical style. Using [a simple configuration][fmt] in my `.vimrc` file, my files get formatted automatically on save: `au FileType go au BufWritePre <buffer> Fmt`. Alternatively, [Brad Fitzpatrick's `goimports` tool][goimp] may be used instead. It takes care of unused/missing import statements as well as formatting.
 
-5. **ctags to jump to declaration** : using `<ctrl>+<shift>+]` makes it possible to jump to the declaration of the token under the cursor. This can be pretty useful, and requires the [installation of `ctags`][andrew] in order to work property. This creates a `tags` file with information for Vim on where tokens are declared. Using this configuration line in `.vimrc`, I can regenerate the `tags` file automatically when saving Go source files, so that it is always up to date: `au BufWritePost *.go silent! !ctags -R &`.
+5. **ctags to jump to declaration** : using `<ctrl>+<shift>+]` makes it possible to jump to the declaration of the token under the cursor. This can be pretty useful, and requires the [installation of `ctags`][andrew] in order to work property. This creates a `tags` file with information for Vim on where tokens are declared. Using this configuration line in `.vimrc`, [I can regenerate the `tags` file automatically when saving Go source files][savectags], so that it is always up to date: `au BufWritePost *.go silent! !ctags -R &`.
 
     There's a [special package `gotags`][gotags] that provides Go language support to ctags. See its readme on GitHub for instructions on how to set it up with tagbar, which is the next bullet...
 
-6. **Type explorer** : the [tagbar plugin][tagbar] provides another side-window, similar to NERD Tree, with IDE-like type explorer of the current file. The plugin requires the use of ctags. I don't use it much as I like to keep my files small, but I still keep it around, mostly for when I navigate other people's code. I mapped the `F4` key to its visibility toggle command: `nmap <F4> :TagbarToggle<CR>`.
+6. **Type explorer** : the [tagbar plugin][tagbar] provides another sidebar, similar to NERD Tree, with IDE-like type explorer of the current file. The plugin requires the use of ctags. I don't use it much as I tend to keep my files small, but I still keep it around, mostly for when I navigate other people's code. I mapped the `F4` key to its toggle command: `nmap <F4> :TagbarToggle<CR>`.
 
     ![Tagbar Preview][tagbarimg]
 
-7. **SuperTab completion** : I'm probably spoiled by too many years of IDEs and Sublime Text, but I like some automatic code completion. `<Ctrl-x><Ctrl-o>` won't cut it. So I use the [SuperTab completion plugin][supertab], that triggers the autocompletion action when the `<tab>` key is pressed in insert mode next to some token. By setting `let g:SuperTabDefaultCompletionType = "context"` in my `.vimrc`, it knows when to trigger `gocode` or simple text completion, based on current context.
+7. **SuperTab completion** : blame it on too many years of heavyweight IDEs, but I like some automatic code completion. `<Ctrl-x><Ctrl-o>` won't cut it. So I use the [SuperTab completion plugin][supertab], that triggers the autocompletion action when the `<tab>` key is pressed in insert mode next to some token. By setting `let g:SuperTabDefaultCompletionType = "context"` in my `.vimrc`, it knows when to trigger `gocode` or simple text completion, based on current context.
 
 8. **autoclose braces** : using the [smart AutoClose plugin][autoclose], the usual pairs of tokens like parentheses, curly braces, brackets, quotes and such are generated automatically, and handled rather intelligently, so that typing the closing token doesn't add an unnecessary character (it simply types over the existing one). I can imagine some people absolutely *loathe* this feature, though.
 
@@ -42,12 +42,11 @@ The next step was to make it truly mine. This is the result of quite a few googl
 
 10. **md is for markdown** : I often write markdown files (like, right now) and I use the shorter `.md` extension instead of the `.markdown` one. To make Vim recognize this content as markdown, I add the line `au BufRead,BufNewFile *.md set filetype=markdown` to my `.vimrc`.
 
-The rest of the list is for rarely used stuff that, for some reason, I've kept around in my configuration.
+The rest of the list is for rarely used stuff that, for some reason, I've kept around in my configuration. It may not survive the next spring cleaning.
 
 11. **build from Vim** : I usually switch to my terminal window when I want to build, test or commit my work. But I still have the `F5` key mapped to [compile Go code and open the results pane][gobuild]:
 
 		au Filetype go set makeprg=go\ build\ ./...
-		" ...
 		nmap <F5> :make<CR>:copen<CR>
 
 12. **Vet and Lint** : similarly, `go vet` and `golint` are simple enough to call from the terminal with a quick switch, or even from Vim using the bang notation (`!go vet %`) in command mode, but still, I have a custom Vim command set up for them:
@@ -66,6 +65,13 @@ The rest of the list is for rarely used stuff that, for some reason, I've kept a
 
 13. **folding** : I have setup my fold method to `syntax` so that folds (code hiding, or *regions* as they are called in Visual Studio, I believe) are automatically available for all functions in Go files. This is pretty much a work-in-progress configuration [based on this article][fold], as I try to find what works best for me.
 
+    ```
+    set foldmethod=syntax
+    set foldnestmax=10
+    set nofoldenable
+    set foldlevel=0
+    ```
+
 The rest of my setup is just setting some Vim options to my liking:
 
 ```
@@ -80,7 +86,7 @@ set fu " Start fullscreen
 
 Note that this is my setup on my Macbook Pro, where I always use the graphical Vim (MacVim). My `.vimrc` file would no doubt need some checks and tweaks to work correctly in terminal mode or cross-platform.
 
-Do you use something awesome, especially Go-related, that I didn't mention? Drop me a line [on Twitter][tw], or [open an issue on Github][issue], I'll update the post (and my `.vimrc`!) with interesting suggestions that make Go coding better with Vim.
+Am I missing some Vim-awesomeness, especially Go-related? Drop me a line [on Twitter][tw], or [discuss via an issue on Github][issue], I'll update the post with interesting suggestions that make Go coding better with Vim.
 
 [pckctrl]: http://wbond.net/sublime_packages/package_control
 [speak]: http://yanpritzker.com/2011/12/16/learn-to-speak-vim-verbs-nouns-and-modifiers/
@@ -105,3 +111,4 @@ Do you use something awesome, especially Go-related, that I didn't mention? Drop
 [tw]: https://twitter.com/PuerkitoBio
 [issue]: https://github.com/PuerkitoBio/0value/issues
 [st]: http://www.sublimetext.com/
+[savectags]: http://stackoverflow.com/questions/155449/vim-auto-generate-ctags
