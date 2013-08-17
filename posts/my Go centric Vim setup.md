@@ -26,7 +26,7 @@ The next step was to make it truly mine. This is the result of quite a few googl
 
 4. **gofmt on save** : if you write Go code, you absolutely should use `gofmt` to format your code to the canonical style. Using [a simple configuration][fmt] in my `.vimrc` file, my files get formatted automatically on save: `au FileType go au BufWritePre <buffer> Fmt`. Alternatively, [Brad Fitzpatrick's `goimports` tool][goimp] may be used instead. It takes care of unused/missing import statements as well as formatting.
 
-5. **ctags to jump to declaration** : using `<ctrl>+<shift>+]` makes it possible to jump to the declaration of the token under the cursor. This can be pretty useful, and requires the [installation of `ctags`][andrew] in order to work property. This creates a `tags` file with information for Vim on where tokens are declared. Using this configuration line in `.vimrc`, [I can regenerate the `tags` file automatically when saving Go source files][savectags], so that it is always up to date: `au BufWritePost *.go silent! !ctags -R &`.
+5. **ctags to jump to declaration** : using `<ctrl>+]` makes it possible to jump to the declaration of the token under the cursor. This can be pretty useful, and requires the [installation of `ctags`][andrew] in order to work properly. This creates a `tags` file with information for Vim on where tokens are declared. Using this configuration line in `.vimrc`, [I can regenerate the `tags` file automatically when saving Go source files][savectags], so that it is always up to date: `au BufWritePost *.go silent! !ctags -R &`.
 
     There's a [special package `gotags`][gotags] that provides Go language support to ctags. See its readme on GitHub for instructions on how to set it up with tagbar, which is the next bullet...
 
@@ -86,7 +86,15 @@ set fu " Start fullscreen
 
 Note that this is my setup on my Macbook Pro, where I always use the graphical Vim (MacVim). My `.vimrc` file would no doubt need some checks and tweaks to work correctly in terminal mode or cross-platform.
 
-Am I missing some Vim-awesomeness, especially Go-related? Drop me a line [on Twitter][tw], or [discuss via an issue on Github][issue], I'll update the post with interesting suggestions that make Go coding better with Vim.
+## Recommendations from readers (added 2013-08-17)
+
+Many among you suggested various plugins following the initial post. Here they are:
+
+* **godef** : based on Roger Peppe's `godef` tool, [this vim plugin][godef] overrides the `gd` (goto definition) command with a spiced-up version that looks inside all packages, even Go's source files. It replaced my ctags-based `<ctrl>+]` command.
+
+* **syntastic** : [this plugin][syntastic] was recommended many times, and I can see why. I haven't used it a lot yet, but it gives syntax checks and error reporting on-the-fly when the file is saved, unobtrusively, without the need to compile the source file. It supports Go out-of-the-box.
+
+* **snippets** : [vim-snipmate][snip] brings Textmate/Sublime Text snippets support to Vim. I haven't tried it yet, as I wasn't using them even with ST2, but for people used to this, it's right there for you!
 
 [pckctrl]: http://wbond.net/sublime_packages/package_control
 [speak]: http://yanpritzker.com/2011/12/16/learn-to-speak-vim-verbs-nouns-and-modifiers/
@@ -112,3 +120,6 @@ Am I missing some Vim-awesomeness, especially Go-related? Drop me a line [on Twi
 [issue]: https://github.com/PuerkitoBio/0value/issues
 [st]: http://www.sublimetext.com/
 [savectags]: http://stackoverflow.com/questions/155449/vim-auto-generate-ctags
+[syntastic]: https://github.com/scrooloose/syntastic
+[godef]: https://github.com/dgryski/vim-godef
+[snip]: https://github.com/garbas/vim-snipmate/
