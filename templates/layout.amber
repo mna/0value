@@ -63,7 +63,9 @@ html.no-js[lang="en"]
 								a[href=$p.Slug] #{$p.Title}
 				div.container.middle
 					small
-						| © 2013 Martin Angers, built with 
+						| 2013 Martin Angers 
+						a[href="https://creativecommons.org/licenses/by-sa/3.0/deed.en_US"] CC BY-SA 3.0
+						| , built with 
 						a[href="https://github.com/PuerkitoBio/trofaf"] trofaf
 		script
 			if (document.querySelectorAll && "classList" in document.documentElement) {
