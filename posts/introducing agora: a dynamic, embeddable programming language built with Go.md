@@ -27,8 +27,8 @@ Here is how it looks as of v0.1:
 
 ```
 // Output: Hello, Agora !
+fmt := import("fmt")
 func greet(name) {
-    fmt := import("fmt")
     fmt.Println("Hello,", name, "!")
 }
 greet("Agora")
@@ -65,13 +65,13 @@ A `ModuleResolver` interface allows for plugging various resolvers into agora, b
 
 Everything in a module is private, there is no uppercase rule for exported symbols. The only thing exposed by a module is its return value, because a module is implicitly a function, so it can return a value. The uppercase is still used as a convention for publicly exported values in the stdlib.
 
-### Syntax similar to Go
+### Syntax similar to Go...
 
 The syntax is very similar to Go, and where it makes sense, the same notation is used. In fact, the current scanner is adapted from Go's scanner package.
 
-### Similar, but not a clone
+### ...but not a clone
 
-Although agora uses a notation similar to Go wherever it makes sense, the goal is obviously not to make a clone, so  it differs in some places too, and not just regarding to the types.
+The goal is obviously not to make a clone, so  it differs in some places too, and not just regarding the types.
 
 The idea is to provide a *looser* and simple companion to the statically-typed and statically-linked Go code. So agora also offers:
 
@@ -88,7 +88,7 @@ Agora provides a command-line interface to build and run programs without having
 
 The `agora` command offers a few sub-commands, most importantly `agora run FILE` to execute an agora source code file.
 
-The *shebang* (#!) notation is also supported by the compiler, so that shell scripts can be written in agora:
+The *shebang* (#!) notation is also supported by the compiler (the scanning stage treats the line as a comment), so that shell scripts can be written in agora:
 
 ```
 #!/usr/bin/env agora run -R
@@ -100,7 +100,7 @@ See the article on the [command-line tool][cli] on the wiki for more details.
 
 ## The stdlib
 
-The standard library is quite minimal at the moment. This is because things are likely to change and evolve quite a bit, with some features that may alter how best to write the API, so I don't want to have too much retrofitting to do.
+The standard library offers minimal support at the moment. This is because things are likely to change and evolve quite a bit, with some features that may alter how best to write the API, so I don't want to invest too heavily in it for now.
 
 Also, it is currently unknown how people may use this language (or *if* it will be used, period - although regardless I will surely keep at it, it's just too much fun!), so I focused on building the minimal set to be able to write useful programs, but really not much more. The native API makes it trivial to write modules in userland, so it seems like a good option to see what's useful before vetting them into the stdlib.
 
@@ -116,7 +116,7 @@ There is a wiki article for [the roadmap][roadmap] of the project.
 
 I had a blast writing this v0.1 release. Go is truly my language of choice nowadays, and I think it played a big part in what I feel is a simple and clean design of the runtime and the native API.
 
-There are a few things I haven't talked about, I guess there will be other blog posts on agora in the future, until then v0.2 is calling me, gotta go!
+There are a few things I haven't talked about, this is merely an overview of the language, so I guess there will be other blog posts on agora in the future. Until then, hopefully you'll be compelled to try it out and let me know what works and what doesn't!
 
 [simdiff]: https://github.com/PuerkitoBio/agora/wiki/Similarities-and-differences-with-Go
 [agora]: https://github.com/PuerkitoBio/agora
