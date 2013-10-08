@@ -12,7 +12,7 @@ A few weeks ago, I [introduced agora][1], a small and simple programming languag
 
 Well, today I'm pleased to announce the release v0.2! The complete changelog can be found in the [closed issues list for the v0.2 milestone][3], but along with many bug fixes, the release introduces three new language features: closures, coroutines and a versatile `for..range` construct.
 
-Before diving head first in the presentation of these features, let me reiterate the obvious disclosure: this is another very **alpha-grade** release that focuses on the language itself, **not** on the compiler, performance / optimizations, nor the stdlib - which is still very minimal. Things may still change, and things *will* change. Don't mix *agora* and *production* in the same sentence. Kittens and all that jazz.
+Before diving head first in the presentation of these features, let me reiterate the obvious disclosure: this is another very **alpha-grade** release that focuses on the language itself, **not** on the compiler, performance / optimizations, nor the stdlib - which is still very minimal. Things may still change, and things *will* change. Don't mention *agora* and *production* in the same sentence. Kittens and all that jazz.
 
 ## Closures
 
@@ -49,7 +49,7 @@ However, the current implementation of closures is kind of dumb and inefficient,
 
 ## Coroutines
 
-> Subroutines are special cases of more general program components, called coroutines. - Donald Knuth
+> "Subroutines are special cases of more general program components, called coroutines." - Donald Knuth
 
 Building on the citation of Mr Knuth, subroutines in agora are really just a special case of coroutine. One way to look at it is that all functions are coroutines, although some simply never yield. A coroutine is a function that calls the new agora keyword `yield` to return a value to the caller. The difference with `return` is that `yield` stores the state of the execution (current instruction, local variables, stack, etc.) and makes it possible to resume execution where it left off when `yield` was called.
 
@@ -84,7 +84,7 @@ You can run and check the module "testdata/src/68-cons-prod.agora" for a more co
 
 The new `for..range` construct is similar to Go's but is very versatile, allowing the `range` keyword to act on strings, numbers, objects as well as coroutines, so that custom iterators can be implemented.
 
-The range on numbers can take 1, 2 or 3 arguments (see "testdata/src/74-range-number.agora" for more examples) and can be seen as syntactic sugar for the usual three-part for loop (although the implementation is currently different):
+The range on numbers can take 1, 2 or 3 arguments (see "testdata/src/74-range-number.agora" for more examples) and as such can be seen as syntactic sugar for the usual three-part for loop:
 
 ```
 // Output: 0, 1, 2, 3, 4
@@ -117,7 +117,7 @@ for s := range "test" {
 
 // Output: this, is, a, word
 // First arg is the source string, second arg is the separator, loops over
-// each segments.
+// each segments. If second arg is falsy, same as single arg form (loops over each byte).
 for s = range "this is a word", " " {
 	fmt.Println(s)
 }
@@ -129,7 +129,7 @@ for s = range "this is a word", " ", 2 {
 }
 ```
 
-The range on objects take a single argument (see "testdata/src/78-range-object.agora" for more examples):
+The range on objects takes a single argument (see "testdata/src/78-range-object.agora" for more examples):
 
 ```
 // Output: a, 0
@@ -141,17 +141,53 @@ for kv = range {a: 0} {
 }
 ```
 
-The last range is on a function, more specifically a coroutine, since a function that never yields will not enter the loop (the value returned by a `return` statement is not part of the iteration).
+The last range is on a function, more specifically a coroutine, since a function that never yields will not enter the loop (the value returned by a `return` statement is not part of the iteration). See "testdata/src/80-range-func.agora" for examples.
 
 ```
+// Define the (silly) coroutine
+func rangeFn(n) {
+	for i := 0; i < n; i++ {
+		yield i
+	}
+}
+// Use it in a range loop (additional arguments - such 
+// as 4 in this case - are passed to the function)
+for i := range rangeFn, 4 {
+	fmt.Println(i)
+}
 ```
 
-The implementation of the range over a function is actually something like this, internally:
+The implementation of the range over a function is syntactic sugar for:
 
+```
+reset(fn)
+for v := fn(); status(fn) == "suspended"; v = fn() {
+	// Use v in loop body
+}
+```
 
+More information on all three new features - and agora in general - can be found in [the wiki][4], and more specifically in the [language reference][5] article.
 
 ## What's next?
+
+If everything goes as smoothly as it went for v0.2, v0.3 should be the last version to focus solely on the language features. Expected to land in the next version is the array literal notation, so that objects can be created using `ob := [12, true, "value"]`, and be equivalent to:
+
+```
+ob := {}
+ob[0] = 12
+ob[1] = true
+ob[2] = "value"
+```
+
+This would still be an `object` type, but it would be internally optimized when all (or most) keys are dense integers.
+
+Another big thing will be to support multiple return values (and yield values). Also expect the introduction of the `switch` statement and something like Go's anonymous struct embedding is among the things I ponder upon. The [tentative roadmap][6] is available on GitHub.
+
+Until then, have fun with v0.2!
 
 [1]: http://0value.com/introducing-agora--a-dynamic--embeddable-programming-language-built-with-Go
 [2]: https://github.com/PuerkitoBio/agora
 [3]: https://github.com/PuerkitoBio/agora/issues?milestone=2&state=closed
+[4]: https://github.com/PuerkitoBio/agora/wiki
+[5]: https://github.com/PuerkitoBio/agora/wiki/Language-reference
+[6]: https://github.com/PuerkitoBio/agora/wiki/Roadmap
