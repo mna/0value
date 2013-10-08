@@ -26,7 +26,7 @@ func fn(str) {
 return fn
 ```
 
-Because there was no closure support, the lexical environment of the function `fn` was not kept along with the function value, so when the caller module would call `fn`, it would get an error because the `fmt` variable would not be defined. Ugly workarounds were needed. This is a thing of the past.
+Because there was no closure support, the lexical environment of the function `fn` was not kept along with the function value, so when the caller module would import this module and call `fn`, it would get an error because the `fmt` variable would not be defined. Ugly workarounds were needed. This is a thing of the past.
 
 With v0.2, the environment is stored along with the function value, making patterns like currying possible:
 
@@ -43,17 +43,19 @@ add10 := makeAdder(10)
 return add2(3) + add10(9) + add2(2)
 ```
 
-The current implementation of closures is kind of dumb and inefficient, as it closes over the whole environment of the function, instead of just the variables required to run the function. This is something that will be addressed when the compiler gets rewritten (probably v0.4). It will be its responsibility to give more information to the runtime regarding the variables required by a given function (there's already an open issue to address this).
+The `n` variable is closed over and stored along with the returned function value in `makeAdder`, so that `add2` and `add10` have different `n`s.
+
+However, the current implementation of closures is kind of dumb and inefficient, as it closes over the whole environment of the function, instead of just the variables required to run the function. This is something that will be addressed when the compiler gets rewritten (probably v0.4). It will be its responsibility to give more information to the runtime regarding the variables required by a given function (there's already an open issue to address this).
 
 ## Coroutines
 
-> Subroutines are special cases of [...] coroutines. - Donald Knuth
+> Subroutines are special cases of more general program components, called coroutines. - Donald Knuth
 
-Building on the citation of Mr Knuth, subroutines in agora are really just a special case of coroutine. All functions are coroutines, although some simply never yield. A coroutine is a function that calls the new agora keyword `yield` to return a value to the caller. The difference with `return` is that `yield` stores the state of the execution (current instruction, local variables, stack, etc.) and makes it possible to resume execution where it left off when `yield` was called.
+Building on the citation of Mr Knuth, subroutines in agora are really just a special case of coroutine. One way to look at it is that all functions are coroutines, although some simply never yield. A coroutine is a function that calls the new agora keyword `yield` to return a value to the caller. The difference with `return` is that `yield` stores the state of the execution (current instruction, local variables, stack, etc.) and makes it possible to resume execution where it left off when `yield` was called.
 
 For now, yield can return at most one value (which is similar to the current limit of a single return value). The next version (v0.3) will address this limitation so that multiple return values are possible.
 
-To resume a coroutine, it just have to be called again. Like any normal function. If the first call yielded a value, the second call resumes execution after the yield. Once a `return` statement is reached, the coroutine is terminated, and a subsequent call to the same function will restart execution from the start.
+To resume a coroutine, it just has to be called again. Like any normal function. If the first call yielded a value, the second call resumes execution after the yield. Once a `return` statement is reached, the coroutine is terminated, and a subsequent call to the same function will restart execution from the start.
 
 ```
 func fn(n) {
@@ -82,7 +84,7 @@ You can run and check the module "testdata/src/68-cons-prod.agora" for a more co
 
 The new `for..range` construct is similar to Go's but is very versatile, allowing the `range` keyword to act on strings, numbers, objects as well as coroutines, so that custom iterators can be implemented.
 
-The range on numbers can take 1, 2 or 3 arguments (see "testdata/src/74-range-number.agora" for more examples):
+The range on numbers can take 1, 2 or 3 arguments (see "testdata/src/74-range-number.agora" for more examples) and can be seen as syntactic sugar for the usual three-part for loop (although the implementation is currently different):
 
 ```
 // Output: 0, 1, 2, 3, 4
@@ -138,6 +140,15 @@ for kv = range {a: 0} {
 	fmt.Println(kv.k, kv.v)
 }
 ```
+
+The last range is on a function, more specifically a coroutine, since a function that never yields will not enter the loop (the value returned by a `return` statement is not part of the iteration).
+
+```
+```
+
+The implementation of the range over a function is actually something like this, internally:
+
+
 
 ## What's next?
 
