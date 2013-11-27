@@ -1,7 +1,7 @@
 ---
 Author: Martin Angers
 Title: Build a RESTful API with Martini
-Description: 
+Description: I've been looking for an excuse to try Martini ever since it was announced on the golang-nuts mailing list. Martini is a Go package for web server development that skyrocketed to close to 2000 stars on GitHub in just a few weeks (the first public commit is a month old). So I decided to build an example application that implements a (pragmatic) RESTful API, based on mostly-agreed-upon best practices.
 Date: 2013-11-27
 Lang: en
 ---
