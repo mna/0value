@@ -47,11 +47,11 @@ The album data structure is defined like this:
 
 ```
 type Album struct {
-	XMLName xml.Name `json:"-" 	xml:"album"`
-	Id      int      `json:"id" 	xml:"id,attr"`
-	Band    string   `json:"band" 	xml:"band"`
-	Title   string   `json:"title" 	xml:"title"`
-	Year    int      `json:"year" 	xml:"year"`
+	XMLName xml.Name `json:"-" xml:"album"`
+	Id      int      `json:"id" xml:"id,attr"`
+	Band    string   `json:"band" xml:"band"`
+	Title   string   `json:"title" xml:"title"`
+	Year    int      `json:"year" xml:"year"`
 }
 
 func (a *Album) String() string {
@@ -226,7 +226,7 @@ Date: Wed, 27 Nov 2013 02:41:36 GMT
 Content-Length: 171
 
 <?xml version="1.0" encoding="UTF-8"?>
-<albums><Error><Code>2</Code><Message>the album &#39;Heartwork&#39; from &#39;Carcass&#39; already exists</Message></Error></albums>
+<albums><error code="2"><message>the album &#39;Heartwork&#39; from &#39;Carcass&#39; already exists</message></error></albums>
 ```
 
 The error is returned in the correct format, with a status code 409. Updates (PUT) work fine too (I mean, everybody knows Heartwork was released in 1993, right?):
