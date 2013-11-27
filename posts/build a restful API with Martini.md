@@ -279,12 +279,12 @@ func main() {
 
 ## What's missing
 
-This is a simple API example application, but it still handles most API tasks. Martini makes this simple and elegant, thanks to its routing and dependency injection mechanisms. In the short time I took to write this article, it already evolved quite a bit, and some handlers got added to the [martini-contrib][contrib] repository too.
+This is a simple API example application, but it still handles many common API tasks. Martini makes this easy and elegant, thanks to its routing and dependency injection mechanisms. In the short time I took to write this article, it already evolved quite a bit, and some handlers got added to the [martini-contrib][contrib] repository too.
 
-If you intend to build a production-level API, be aware that there are a few important things missing from this small example application, though:
+If you intend to build a production-quality API, be aware that there are a few important things missing from this small example application, though:
 
 * A more powerful authentication mechanism, obviously (a single access token won't do!)
-* Support for JSON- or XML-encoded request bodies for POST or PUT verbs (or PATCH)
+* Support for JSON- (and/or XML-) encoded request bodies for POST and PUT verbs (and PATCH)
 * Support for 405 - Method not allowed response code (currently, the API will return 404 when an unsupported method is used on a supported route)
 * Support for GZIP compression of responses (I see that there is now a Gzip middleware on the martini-contrib repository)
 * Probably more depending on your requirements!
