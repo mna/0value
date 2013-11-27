@@ -107,6 +107,8 @@ Then we define a global dependency. This is a very neat feature of martini (wait
 
 The syntax for the second parameter may seem weird, it is just converting `nil` to the pointer-to-DB-interface type, because all the injector needs is the type to map the first parameter to.
 
+The final step, `m.Action()`, adds the router's configuration to the list of handlers that Martini will call.
+
 ## The MapEncoder middleware
 
 Back to the `MapEncoder` middleware function, it sets the `Encoder` interface dependency for the current request based on the requested encoding format:
