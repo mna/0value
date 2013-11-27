@@ -291,7 +291,7 @@ If you intend to build a production-quality API, be aware that there are a few i
 * Support for GZIP compression of responses (I see that there is now a Gzip middleware on the martini-contrib repository)
 * Probably more depending on your requirements!
 
-However, this article should've given you a taste of how it can be done with Martini. Most features are just a handler away!
+However, this article should've given you a taste of how it can be done with Martini.
 
 [martini]: http://martini.codegangsta.io
 [mapiex]: https://github.com/PuerkitoBio/martini-api-example
