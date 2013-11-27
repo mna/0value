@@ -63,9 +63,9 @@ The field tags control the marshaling of the structure to JSON and XML. The `XML
 
 With this out of the way, let's see how Martini is actually used.
 
-## 
+## DRY Martini
 
-At the heart of the martini package is the `martini.Martini` type, which implements the `http.Handler` interface, so that it can be passed to `http.ListenAndServe()` like any stdlib handler. Another important notion is that martini uses a middleware-based approach - meaning that you can configure a list of functions to be called in a specific order before the actual route handler is executed. This is very useful to setup things like logging, authentication, session management, etc.
+At the heart of the martini package is the `martini.Martini` type, which implements the `http.Handler` interface, so that it can be passed to `http.ListenAndServe()` like any stdlib handler. Another important notion is that martini uses a middleware-based approach - meaning that you can configure a list of functions to be called in a specific order before the actual route handler is executed. This is very useful to setup things like logging, authentication, session management, etc., and it helps keep things [DRY][].
 
 The package provides the `martini.Classic()` function that creates an instance with sane defaults - common middleware like panic recovery, logging and static file support. This is great for a web site, but for an API, we don't care much about serving static pages, so we won't use the Classic Martini.
 
@@ -91,7 +91,7 @@ func init() {
 	r.Put(`/albums/:id`, UpdateAlbum)
 	r.Delete(`/albums/:id`, DeleteAlbum)
 
-	// Inject AlbumRepository
+	// Inject database
 	m.MapTo(db, (*DB)(nil))
 
 	// Add the router action
@@ -103,7 +103,9 @@ The panic recovery and logger middleware are fairly obvious. `auth.Basic()` is a
 
 Let's skip over the `MapEncoder` middleware for now, we'll come back to it in a minute. The next step is to setup the routes, and martini provides a nice clean way to do this. It supports placeholders for parameters, and you can even throw some regular expressions in there, that's how the path will end up anyway. The second parameter to the `Get, Post, Put` and co. is the handler to call for this route. Many handlers can be passed on the same route definition (this is a variadic parameter), and they will be executed in order, until one of them writes a response.
 
-Then we define a global dependency. This is a very neat feature of martini, it supports global- and request-scoped dependencies, and when it encounters a handler (middleware function or route handler) that asks for a parameter of that type, the dependency injector will feed it the right value. In this case, `m.MapTo()` maps the `db` package variable (the instance of our in-memory database) to the `DB` interface that we defined earlier. This is great for testing with mocks, or to dynamically feed different implementations of an interface, as we'll see with the `MapEncoder` middleware. The syntax for the second parameter may seem weird, it is just converting `nil` to the pointer-to-DB-interface type, because all the injector needs is the type to map the first parameter to.
+Then we define a global dependency. This is a very neat feature of martini (wait, or is it [*icky*][icky] ? :-), it supports global- and request-scoped dependencies, and when it encounters a handler (middleware function or route handler) that asks for a parameter of that type, the dependency injector will feed it the right value. In this case, `m.MapTo()` maps the `db` package variable (the instance of our in-memory database) to the `DB` interface that we defined earlier. This particular case doesn't get much added value versus using the thread-safe, package-global `db` variable directly, but in other cases (like the encoder, see below) it can prove very useful.
+
+The syntax for the second parameter may seem weird, it is just converting `nil` to the pointer-to-DB-interface type, because all the injector needs is the type to map the first parameter to.
 
 ## The MapEncoder middleware
 
@@ -125,9 +127,11 @@ var rxExt = regexp.MustCompile(`(\.(?:xml|text|json))\/?$`)
 // the URL to remove the format extension, so that routes can be defined
 // without it.
 func MapEncoder(c martini.Context, w http.ResponseWriter, r *http.Request) {
+	// Get the format extension
 	matches := rxExt.FindStringSubmatch(r.URL.Path)
 	ft := ".json"
 	if len(matches) > 1 {
+		// Rewrite the URL without the format extension
 		l := len(r.URL.Path) - len(matches[1])
 		if strings.HasSuffix(r.URL.Path, "/") {
 			l--
@@ -135,6 +139,7 @@ func MapEncoder(c martini.Context, w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = r.URL.Path[:l]
 		ft = matches[1]
 	}
+	// Inject the requested encoder
 	switch ft {
 	case ".xml":
 		c.MapTo(xmlEncoder{}, (*Encoder)(nil))
@@ -167,9 +172,9 @@ func GetAlbum(enc Encoder, db DB, parms martini.Params) (int, string) {
 }
 ```
 
-First, we can see that `martini.Params` can be used as parameter to get a map of named parameters defined on the route pattern. If the `id` is not an integer, or if it doesn't exist in the database (there's no id=0 in the database, which is why I use this common `if`), a 404 status code is returned with a correctly-encoded error message. Note the use of the `Must()` function, since we have a `Recovery()` middleware that will trap panics and return a 500, we can safely panic in case of server-side errors. More serious projects would probably want to return a custom message along with the 500, though.
+First, we can see that `martini.Params` can be used as parameter to get a map of named parameters defined on the route pattern. If the `id` is not an integer, or if it doesn't exist in the database (I know for a fact that there's no id=0 in the database, which is why I use this dual-purpose `if`), a 404 status code is returned with a correctly-encoded error message. Note the use of the `Must()` function, since we have a `Recovery()` middleware that will trap panics and return a 500, we can safely panic in case of server-side errors. More serious projects would probably want to return a custom message along with the 500, though.
 
-Finally, if all goes well, a code 200 is returned, along with the encoded album. If a route handler returns two values, and the first is an `int`, Martini will use this first value as the status code, and will write the second value as a string to the `http.ResponseWriter`. If the first value is not an `int`, it will write the first value to the `http.ResponseWriter`.
+Finally, if all goes well, a code 200 is returned, along with the encoded album. If a route handler returns two values, and the first is an `int`, Martini will use this first value as the status code, and will write the second value as a string to the `http.ResponseWriter`. If the first value is not an `int`, or if there is only one return value, it will write the first value to the `http.ResponseWriter`.
 
 ## curl calls
 
@@ -248,7 +253,7 @@ Content-Length: 0
 
 ## https required
 
-You don't want to expose a basic-authenticated API (or any but the most basic API) over http, and it is recommended to return an error in case of a clear-text call instead of silently redirecting to https, so that the API consumer can take notice. There are many ways to do this, if you have a reverse proxy in front of your API server, this may be a good place to do it. In the example app, I start two listeners, one on `http` and another on `https`, and the `http` server always returns an error:
+You don't want to expose a basic-authenticated API (or any but the most basic public API) over http, and it is recommended to return an error in case of a clear-text call instead of silently redirecting to https, so that the API consumer can take notice. There are many ways to do this, if you have a reverse proxy in front of your API server, this may be a good place to do it. In the example app, I start two listeners, one on `http` and another on `https`, and the `http` server always returns an error:
 
 ```
 func main() {
@@ -270,7 +275,7 @@ func main() {
 
 ## What's missing
 
-This is a simple API example application, but it still handles most API tasks. Martini makes this simple and elegant, thanks to its routing and dependency injection mechanisms. In the short time I took to write this article, it already evolved quite a bit, and some handlers got added to the [martini-contrib][] repository too.
+This is a simple API example application, but it still handles most API tasks. Martini makes this simple and elegant, thanks to its routing and dependency injection mechanisms. In the short time I took to write this article, it already evolved quite a bit, and some handlers got added to the [martini-contrib][contrib] repository too.
 
 If you intend to build a production-level API, be aware that there are a few important things missing from this small example application, though:
 
@@ -278,10 +283,15 @@ If you intend to build a production-level API, be aware that there are a few imp
 * Support for JSON- or XML-encoded request bodies for POST or PUT verbs (or PATCH)
 * Support for 405 - Method not allowed response code (currently, the API will return 404 when an unsupported method is used on a supported route)
 * Support for GZIP compression of responses (I see that there is now a Gzip middleware on the martini-contrib repository)
+* Probably more depending on your requirements!
 
-However, this article should've given you a taste of how it can be done. Most features are just a handler away!
+However, this article should've given you a taste of how it can be done with Martini. Most features are just a handler away!
 
 [martini]: http://martini.codegangsta.io
+[mapiex]: https://github.com/PuerkitoBio/martini-api-example
 [inject]: https://github.com/codegangsta/inject
 [handler]: http://golang.org/pkg/net/http/#Handler
 [api]: http://www.vinaysahni.com/best-practices-for-a-pragmatic-restful-api
+[dry]: http://en.wikipedia.org/wiki/Don't_repeat_yourself
+[contrib]: https://github.com/codegangsta/martini-contrib
+[icky]: https://twitter.com/enneff/status/405603366568329216
