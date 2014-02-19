@@ -1,3 +1,11 @@
+---
+Author: Martin Angers
+Title: Throttled: Guardian Of The Web Server
+Date: 2014-02-19
+Description: I just put the finishing touches for the release of throttled, a Go package that implements various strategies to control access to HTTP handlers. Out-of-the-box, it supports rate-limiting of requests, constant interval flow of requests and memory usage thresholds to grant or deny access, but it also provides mechanisms to extend its functionality.
+Lang: en
+---
+
 # Throttled: Guardian Of The Web Server
 
 I just put the finishing touches for the release of [throttled][], a Go package that implements various strategies to control access to HTTP handlers. Out-of-the-box, it supports rate-limiting of requests, constant interval flow of requests and memory usage thresholds to grant or deny access, but it also provides mechanisms to extend its functionality.
@@ -11,7 +19,7 @@ The `Limiter` interface is defined as follows:
 ```
 type Limiter interface {
     Start()
-        Limit(http.ResponseWriter, *http.Request) (<-chan bool, error)
+    Limit(http.ResponseWriter, *http.Request) (<-chan bool, error)
 }
 ```
 
@@ -88,8 +96,10 @@ Finally, the `maxKeys` argument sets the maximum number of vary-by keys to keep
 ```
 # Run the example app (in examples/interval-vary/)
 $ ./interval-vary -delay 100ms -bursts 100 -output ok
+
 # In another terminal window, start siege with the URL file to hit various URLs
 $ siege -b -f siege-urls
+
 # Output from the example app:
 2014/02/18 17:23:47 /a: ok: 1.050021944s
 2014/02/18 17:23:47 /b: ok: 1.050646811s
@@ -108,7 +118,7 @@ Each path receives requests at 100ms intervals.
 
 `RateLimit(quota Quota, vary *VaryBy, store Store) *Throttler`
 
-This function creates a throttler that limits the number of requests allowed in a time window, which is a very common need in public RESTful APIs.
+This function creates a throttler that limits the number of requests allowed in a time window, which is a very common requirement in public RESTful APIs.
 
 The Quota interface defines a single method:
 
@@ -118,27 +128,33 @@ type Quota interface {
 }
 ```
 
-It returns the number of requests and the duration of the time window. Conveniently, the `PerXxx` types that implement the `Delayer` interface also implement the `Quota` interface, and there is a `Q` type to define custom quotas:
+It returns the number of requests and the duration of the time window. Conveniently, the `PerXxx` types that implement the `Delayer` interface also implement the `Quota` interface, and there is a `Q` type to define custom quotas. Again, examples help:
 
 ```
 // Allow 10 requests per second
 RateLimit(PerSec(10), &VaryBy{RemoteAddr: true}, store.NewMemStore(0))
-    // Allow 30 requests per minute
+// Allow 30 requests per minute
 RateLimit(PerMin(30), &VaryBy{RemoteAddr: true}, store.NewMemStore(0))
-    // Allow 15 requests each 30 minute
+// Allow 15 requests each 30 minute
 RateLimit(Q{15, 30*time.Minute}, &VaryBy{RemoteAddr: true}, store.NewMemStore(0))
-    ```
-
-    The `vary` argument plays the same role as in `Interval`. The `store` is used to save the rate-limiting state. The `Store` interface is:
-
-    ```
-    type Store interface {
-        Incr(key string, window time.Duration) (cnt int, secs int, e error)
-            Reset(key string, window time.Duration) error
-    }
 ```
 
-The `throttled/store` package offers an in-memory store, and a Redis-based store.
+The `vary` argument plays the same role as in `Interval`. The `store` is used to save the rate-limiting state. The `Store` interface is:
+
+```
+type Store interface {
+    // Incr increments the count for the specified key and returns the new value along
+    // with the number of seconds remaining. It may return an error
+    // if the operation fails.
+    Incr(key string, window time.Duration) (cnt int, secs int, e error)
+
+    // Reset resets the key to 1 with the specified window duration. It must create the
+    // key if it doesn't exist. It returns an error if it fails.
+    Reset(key string, window time.Duration) error
+}
+```
+
+The `throttled/store` package offers an in-memory store and a Redis-based store.
 
 The rate-limiter automatically adds the `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers on the response. The Limit indicates the number of requests allowed in the window, Remaining is the number of requests remaining in the current window, and Reset indicates the number of seconds remaining until the end of the current window.
 
@@ -146,19 +162,61 @@ When the limit is busted, the header `Retry-After` is also added to the response
 
 Using `curl` and the example app, let's see it in action:
 
+```
+# Run the example app (in examples/rate-limit/)
+$ ./rate-limit -requests 3 -window 30s
+
+# Run curl the first time
+$ curl -i http://localhost:9000/a
+HTTP/1.1 200 OK
+X-Ratelimit-Limit: 3
+X-Ratelimit-Remaining: 2
+X-Ratelimit-Reset: 29
+Date: Wed, 19 Feb 2014 00:59:15 GMT
+Content-Length: 0
+Content-Type: text/plain; charset=utf-8
+
+# ... (skipped 2nd and 3rd) run curl a fourth time
+$ curl -i http://localhost:9000/a
+HTTP/1.1 429 Too Many Requests
+Content-Type: text/plain; charset=utf-8
+Retry-After: 23
+X-Ratelimit-Limit: 3
+X-Ratelimit-Remaining: 0
+X-Ratelimit-Reset: 23
+Date: Wed, 19 Feb 2014 00:59:22 GMT
+Content-Length: 15
+
+limit exceeded
+```
+
 ### MemStats
 
 `MemStats(thresholds *runtime.MemStats, refreshRate time.Duration) *Throttler`
 
 This function accepts a struct of memory stats with the desired thresholds, and a refresh rate indicating when to refresh the current memory stats values (0 means read on each request). Any integer field in the MemStats struct can be used as a threshold value, and zero-valued fields are ignored.
 
-The thresholds must be in absolute value (i.e. Allocs = 10 000 means 10 000 bytes, not 10 000 bytes more than some previous reading), but there is the helper function `MemThresholds(offsets *runtime.MemStats) *runtime.MemStats` that  translates offsets to absolute values.
+The thresholds must be in absolute value (i.e. Allocs = 10 000 means 10 000 bytes allocated by the process, not 10 000 bytes more than some previous reading), but there is the helper function `MemThresholds(offsets *runtime.MemStats) *runtime.MemStats` that  translates offsets to absolute values.
 
-Using [`boom`][boom] and the memstats example app (that fully loads in memory a 64Kb file on each request), we can test its behaviour:
+[Using `boom`][boom] (a nice Go load generator) and the memstats example app (that fully loads in memory a 64Kb file on each request), we can test its behaviour:
 
-//TODO
+```
+# Run the example app (in examples/memstats/)
+$ ./memstats -total 500000 -output ok
 
-Obviously, some memory stats just go up and never down, so once the threshold is reached, no other request will ever be allowed. But since the DroppedHandler is just a Handler, it is possible to build a routing strategy such that once the threshold is reached, requests are sent to a throttled handler that allows requests to go through at a slow interval, for example, or a handler that restarts the process, why not!
+# Run boom
+$ boom -n 100 -c 10 http://localhost:9000
+
+# Example app output
+2014/02/18 20:06:17 ok: 1.722598952s
+2014/02/18 20:06:17 ok: 1.722931271s
+2014/02/18 20:06:17 ok: 1.72315662s
+2014/02/18 20:06:17 ok: 1.723366605s
+2014/02/18 20:06:26 ok: 4, ko: 96
+2014/02/18 20:06:26 TotalAllocs: 1309 Kb, Allocs: 1197 Kb, Mallocs: 2833, NumGC: 4
+```
+
+Obviously, some memory stats just go up and never down, so once the threshold is reached, no other request will ever be allowed. But since the DeniedHandler is just a Handler, it is possible to build a routing strategy such that once the threshold is reached, requests are sent to a throttled handler that allows requests to go through at a slow interval, for example, or a handler that restarts the process, whatever's required!
 
 ### Custom
 
@@ -168,17 +226,17 @@ A quick word on the Custom function, it accepts any `Limiter` as argument and re
 
 ## Miscellaneous Closing Thoughts
 
-As alluded to in the MemStats section, the package manipulates plain old HTTP handlers, so combining them in useful and creative ways is definitely possible. The DroppedHandler is just that, a Handler, it doesn't have to return a 429 or 503 error, it can do whatever is needed to do, like call a differently throttled (or non-throttled) handler.
+* As alluded to in the MemStats section, the package manipulates plain old HTTP handlers, so combining them in useful and creative ways is definitely possible. The DeniedHandler is just that, a Handler, it doesn't have to return a 429 or 503 error, it can do whatever is needed to do, like call a differently throttled (or non-throttled) handler.
 
-The examples are also useful for testing with the data race detector in real-world (or not-so-real-world) usage. Just `go build -race` the app, and see how it goes.
+* The example apps are useful for testing with the data race detector in real-world (or not-so-real-world) usage. Just `go build -race` the app, and see how it goes.
 
-Inspired by [Go's pre-commit hook example][gogit] in its misc/git/ folder, I usually add a pre-commit hook in my Go repositories that run both [`golint`][lint] and [`go vet`][vet] on my packages. Both programs have proved very helpful in finding different categories of bugs (vet) and consistency/style errors (lint). You can find my hook in the /misc/ subdirectory of the repository. Note that the linter output is purely informational, it doesn't return an exit code != 0 and thus does not prevent the commit from happening if it finds some problems.
+* Inspired by [Go's pre-commit hook example][gogit] in its misc/git/ folder, I added a pre-commit hook in my Go repositories that run both [`golint`][lint] and [`go vet`][vet] on my packages. Both programs have proved very helpful in finding different categories of bugs (vet) and consistency/style errors (lint). You can find my hook in the /misc/ subdirectory of the repository. Note that the linter output is purely informational, it doesn't return an exit code != 0 and thus does not prevent the commit from happening if it finds some problems.
 
-That's it for now, hope you like it! [Fork, star, test and PR at will][throttled]!
+That's it for now, hope you like it! [Fork, star, test, report issues and PR at will][throttled]!
 
 [throttled]: https://github.com/PuerkitoBio/throttled
 [siege]: http://www.joedog.org/siege-home/
 [gogit]: http://golang.org/misc/git/pre-commit
 [lint]: https://github.com/golang/lint
 [vet]: http://godoc.org/code.google.com/p/go.tools/cmd/vet
-[boom]: https://github.com/rakyll/boom']''''
+[boom]: https://github.com/rakyll/boom
