@@ -47,7 +47,7 @@ Thanks to xxd's `-r` flag that reverses hex to binary, we can also configure thi
 nnoremap <leader>H :%!xxd -r<CR>:e!<CR>
 ```
 
-You have to be careful because the `e!` command discards any changes in the current buffer. I still use it because I rarely want to actually save changes to a binary file in Vim. Remove this part of the command if you don't want this behaviour.
+You have to be careful because the `e!` command discards any changes in the current buffer. I still use it because I rarely want to actually save changes to a binary file in Vim, or save changes made in hex mode. Remove this part of the command if you don't want this behaviour.
 
 ## The pattern
 
