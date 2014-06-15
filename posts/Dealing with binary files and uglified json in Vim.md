@@ -1,7 +1,7 @@
 ---
 Author: Martin Angers
 Title: Dealing with binary files and uglified JSON in Vim
-Date: 2014-06-14
+Date: 2014-06-16
 Description: Long uglified JSON files can be painful to look at. Same thing with binary files that you want to scan visually. Thankfully, a simple Vim configuration can make your life much better.
 Lang: en
 ---
