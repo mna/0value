@@ -2,7 +2,7 @@
 Author: Martin Angers
 Title: A Handful of Go Idioms
 Description:
-Date:
+Date
 Lang: en
 ---
 
