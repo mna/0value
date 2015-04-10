@@ -8,17 +8,66 @@ Lang: en
 
 # A PEG parser generator for Go
 
-[Parsing expression grammars (PEGs)][peg] are an interesting alternative to the traditional [context-free grammars (CFGs)][cfg] often seen in the field of programming languages - usually in some variety of [Backus-Naur form][BNF]. Attributed to [Bryan Ford and his 2004 paper][ford], this is a relatively new theory. PEGs are unambiguous and offer unlimited lookahead, which also means potentially exponential time performance in pathological cases - something that can be mitigated in practice with memoization of results, guaranteeing linear time.
+[Parsing expression grammars (PEGs)][peg] are an interesting alternative to the traditional [context-free grammars (CFGs)][cfg] often seen in the field of programming languages - usually in some variety of [Backus-Naur form][BNF]. Attributed to [Bryan Ford and his 2004 paper][ford], this is a relatively new theory. PEGs are unambiguous and offer unlimited lookahead, which also means potentially exponential time performance in pathological cases - something that can be mitigated in practice with memoization of results, guaranteeing linear time. No lexer is required, the grammar is "self-sufficient", which is another interesting aspect.
 
-Intrigued and attracted by this grammar, I spent the last few weeks working on a PEG-based parser generator for Go (think compiler-compiler, *a-la* yacc/bison). This gave birth to [`pigeon`][pigeon], a Go command-line tool that parses a PEG file and generates Go code that can parse input based on the source grammar.
+Intrigued and attracted by all that, I spent the last few weeks working on a PEG-based parser generator for Go (think compiler-compiler, *a-la* yacc/bison). This [gave birth to `pigeon`][pigeon], a Go command-line tool that parses a PEG file and generates Go code that can parse input based on the source grammar.
 
-## A quick taste of PEG
+## A quick taste of PEG, pigeon-style
 
-...
+It is not the goal of this article to teach parsing expression grammars, but just to give a quick idea of what it looks like, a valid calculator grammar can look like this (full listing available in the [github repository][pigeon], under examples/calculator):
+
+```
+// helper function `eval` omitted for brevity
+
+Expr <- _ first:Term rest:( _ AddOp _ Term )* _ {
+    return eval(first, rest), nil
+}
+
+Term <- first:Factor rest:( _ MulOp _ Factor )* {
+    return eval(first, rest), nil
+}
+
+Factor <- '(' expr:Expr ')' {
+    return expr, nil
+} / integer:Integer {
+    return integer, nil
+}
+
+AddOp <- ( '+' / '-' ) {
+    return string(c.text), nil
+}
+
+MulOp <- ( '*' / '/' ) {
+    return string(c.text), nil
+}
+
+Integer <- '-'? [0-9]+ {
+    return strconv.Atoi(string(c.text))
+}
+
+_ "whitespace" <- [ \n\t\r]*
+```
+
+It's fairly easy to see that there's a rule (non-terminal) on the left side, associated with a definition (expressions, other non-terminals or terminals) on the right-hand side. Between curly braces are the code blocks associated with the expression - if there's a match, this code gets called. It returns the result of the expression and an error. This is Go code, obviously.
+
+Many constructs look a lot like regular expressions - indeed, character classes and repetition operators are pretty much what you'd expect (`?` is zero or one, `*` is zero or more and `+` is one or more). String and character literals are pretty obvious too - it must match exactly with the input text. The `/` separator is the ordered choice expression, the first expression that matches is used, so the result is always deterministic and unambiguous.
+
+But what is that strange `c.text` reference in the code blocks? Each code block gets generated as a method on the `*current` type, which is defined like this:
+
+```
+type current struct {
+    pos  position
+    text []byte
+}
+```
+
+By default, the receiver variable is named `c`, but that is configurable. The `position` type gives the current position in the parser with `line`, `col` and `offset` fields (the first 2 are 1-based, `col` being a count of runes since the beginning of the line, and `offset` is a 0-based count of bytes). The `text` field is the slice of matching bytes in the current expression. This is a slice of the original source text, so it should not be modified.
+
+A labeled expression, where an identifier is followed by `:` before an expression, is a variable that "captures" the value of the associated expression, and makes that value available in the corresponding code block. It is converted to an argument (typed as an empty interface) in the generated method for the code block. By default, the value of an expression is a slice of bytes, but if the expression is a sequence or a `*` or `+` repeating expression, then the value is a `[]interface{}` of the corresponding length. Of course all this can be overridden with a code block that returns something else (often an AST node).
 
 ## Looks like Go, outputs Go
 
-Although the features and syntax were based on the javascript project [PEG.js][pegjs], `pigeon` is made for Go and it shows. The identifiers, string and character literals and comments all follow the same rules as in the Go language, and Go's keywords and predeclared identifiers are disallowed as PEG labels (variables that can be referenced in code blocks, more on that later). Also, thanks to Go's great Unicode support, `pigeon` also fully supports Unicode characters. The grammars and source text must be UTF-8-encoded text, and it is easy to match against specific Unicode code points or classes of code points.
+Although the features and syntax were based on the javascript project [PEG.js][pegjs], `pigeon` is made for Go and it shows. The identifiers, string and character literals and comments all follow the same rules as in the Go language, and Go's keywords and predeclared identifiers are disallowed as PEG labels. Also, thanks to Go's great Unicode support, `pigeon` fully supports Unicode characters. The grammars and source text must be UTF-8-encoded text, and it is easy to match against specific Unicode code points or classes of code points.
 
 ```
 // this is a single-line comment
@@ -36,7 +85,7 @@ where \ are just \,
 no escapes, as in Go`
 ```
 
-In addition to string and character literals, character classes can be used in square brackets, similar to regular expressions:
+In addition to string and character literals, as seen above, character classes can be used in square brackets, similar to regular expressions:
 
 ```
 [abc]       // a, b or c
@@ -46,16 +95,20 @@ In addition to string and character literals, character classes can be used in s
 [\p{Latin}] // Unicode class name
 ```
 
-Literals and character classes can have a lowercase `"i"` suffix to indicate that the matching should be case-insensitive:
+Literals and character classes can have a lowercase `"i"` suffix to indicate that the matching should be case-insensitive. There was no obvious syntax to use to make this Go-like, so the same syntax as PEG.js was used.
 
 ```
 'A'i
 "A String"i
-`A raw string"i
+`A raw string`i
 [a-z]i
 ```
 
 And character classes can start with a `"^"` to invert the condition, so `[^a-z]` means "match anything that is not `a...z`".
+
+## Dog-fooding
+
+
 
 [peg]: http://en.wikipedia.org/wiki/Parsing_expression_grammar
 [cfg]: http://en.wikipedia.org/wiki/Context-free_grammar
