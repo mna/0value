@@ -8,7 +8,7 @@ Lang: en
 
 # A PEG parser generator for Go
 
-[Parsing expression grammars (PEGs)][peg] are an interesting alternative to the traditional [context-free grammars (CFGs)][cfg] often seen in the field of programming languages - usually in some variety of [Backus-Naur form][BNF]. Attributed to [Bryan Ford and his 2004 paper][ford], this is a relatively new theory. PEGs are unambiguous and offer unlimited lookahead, which also means potentially exponential time performance in pathological cases - something that can be mitigated in practice with memoization of results, guaranteeing linear time. No lexer is required, the grammar is "self-sufficient", which is another interesting aspect.
+[Parsing expression grammars (PEGs)][peg] are an interesting alternative to the traditional [context-free grammars (CFGs)][cfg] often seen in the field of programming languages - usually in some variety of [Backus-Naur form][BNF]. Attributed to [Bryan Ford and his 2004 paper][ford], this is a relatively new theory. PEGs are unambiguous and offer unlimited lookahead, which also means potentially exponential time performance in pathological cases - something that can be mitigated in practice with memoization of results, guaranteeing linear time. No lexer is required, the grammar is "self-sufficient", which is another distinguishing characteristic.
 
 Intrigued and attracted by all that, I spent the last few weeks working on a PEG-based parser generator for Go (think compiler-compiler, *a-la* yacc/bison). This [gave birth to `pigeon`][pigeon], a Go command-line tool that parses a PEG file and generates Go code that can parse input based on the source grammar.
 
@@ -48,9 +48,11 @@ Integer <- '-'? [0-9]+ {
 _ "whitespace" <- [ \n\t\r]*
 ```
 
-It's fairly easy to see that there's a rule (non-terminal) on the left side, associated with a definition (expressions, other non-terminals or terminals) on the right-hand side. Between curly braces are the code blocks associated with the expression - if there's a match, this code gets called. It returns the result of the expression and an error. This is Go code, obviously.
+It's fairly easy to see that there's a rule (non-terminal) on the left side of the arrow, associated with a definition (expressions, other non-terminals or terminals) on the right-hand side. Between curly braces are the code blocks associated with the expression - if there's a match, this code gets called. It returns the result of the expression and an error. This is Go code, obviously.
 
-Many constructs look a lot like regular expressions - indeed, character classes and repetition operators are pretty much what you'd expect (`?` is zero or one, `*` is zero or more and `+` is one or more). String and character literals are pretty obvious too - it must match exactly with the input text. The `/` separator is the ordered choice expression, the first expression that matches is used, so the result is always deterministic and unambiguous.
+Many constructs look a lot like regular expressions - indeed, character classes and repetition operators are pretty much what you'd expect (`?` is zero or one, `*` is zero or more and `+` is one or more). String and character literals are pretty obvious too - it must match exactly with the input text. The `/` separator is the ordered choice expression, the first expression that matches is used, so the result of parsing a given input text is always deterministic and unambiguous.
+
+The `"whitespace"` string literal on the left side of the last rule is what is called a display name in pigeon - it can be used to give a friendlier name to a rule and will appear in error messages instead of the rule identifier.
 
 But what is that strange `c.text` reference in the code blocks? Each code block gets generated as a method on the `*current` type, which is defined like this:
 
@@ -61,9 +63,9 @@ type current struct {
 }
 ```
 
-By default, the receiver variable is named `c`, but that is configurable. The `position` type gives the current position in the parser with `line`, `col` and `offset` fields (the first 2 are 1-based, `col` being a count of runes since the beginning of the line, and `offset` is a 0-based count of bytes). The `text` field is the slice of matching bytes in the current expression. This is a slice of the original source text, so it should not be modified.
+By default, the receiver variable is named `c`, but that is configurable via a command-line flag. The `position` type gives the current position in the parser with `line`, `col` and `offset` fields (the first 2 are 1-based, `col` being a count of runes since the beginning of the line, and `offset` is a 0-based count of bytes). The `text` field is the slice of matching bytes in the current expression. This is a slice of the original source text, so it should not be modified.
 
-A labeled expression, where an identifier is followed by `:` before an expression, is a variable that "captures" the value of the associated expression, and makes that value available in the corresponding code block. It is converted to an argument (typed as an empty interface) in the generated method for the code block. By default, the value of an expression is a slice of bytes, but if the expression is a sequence or a `*` or `+` repeating expression, then the value is a `[]interface{}` of the corresponding length. Of course all this can be overridden with a code block that returns something else (often an AST node).
+A labeled expression, where an identifier is followed by `:` before an expression, is a variable that "captures" the value of the associated expression, and makes that value available in the corresponding code block. It is converted to an argument (an empty interface) in the generated method for the code block. By default, the value of an expression is a slice of bytes, but if the expression is a sequence or a `*` or `+` repeating expression, then the value is a `[]interface{}` of the corresponding length. Of course all this can be overridden with a code block that returns something else (often an AST node).
 
 ## Looks like Go, outputs Go
 
@@ -78,7 +80,7 @@ comment */
 
 'a' // a single character with the same escape sequences as in Go
 
-"a double-quoted string with the same escape sequences as in Go"
+"a double-quoted string with the same escape sequences as in Go, e.g. \n or \u2190"
 
 `a raw string
 where \ are just \,
@@ -106,6 +108,8 @@ Literals and character classes can have a lowercase `"i"` suffix to indicate tha
 
 And character classes can start with a `"^"` to invert the condition, so `[^a-z]` means "match anything that is not `a...z`".
 
+Even though this outputs generated code, care has been taken to make this good, readable and idiomatic code. In particular, provided the code blocks in the grammar do the same, the generated code passes both [`golint`][lint] and [`go vet`][vet]. It uses no external dependency.
+
 ## Dog-fooding
 
 
@@ -116,3 +120,5 @@ And character classes can start with a `"^"` to invert the condition, so `[^a-z]
 [ford]: http://pdos.csail.mit.edu/~baford/packrat/popl04/peg-popl04.pdf
 [pigeon]: https://github.com/PuerkitoBio/pigeon
 [pegjs]: http://pegjs.org/
+[lint]: https://github.com/golang/lint
+[vet]: http://godoc.org/golang.org/x/tools/cmd/vet
