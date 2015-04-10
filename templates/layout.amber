@@ -63,7 +63,7 @@ html.no-js[lang="en"]
 								a[href=$p.Slug] #{$p.Title}
 				div.container.middle
 					small
-						| 2013-2014 Martin Angers 
+						| 2013-2015 Martin Angers 
 						a[href="https://creativecommons.org/licenses/by-sa/3.0/deed.en_US"] CC BY-SA 3.0
 						| , built with 
 						a[href="https://github.com/PuerkitoBio/trofaf"] trofaf
