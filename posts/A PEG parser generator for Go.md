@@ -1,7 +1,7 @@
 ---
 Author: Martin Angers
 Title: A PEG parser generator for Go
-Date: 2015-01-01
+Date: 2015-04-13
 Description: Parsing expression grammars (PEGs) are an interesting alternative to the traditional context-free grammars (CFGs) often seen in the field of programming languages - usually in some flavor of Backus-Naur form. Attributed to Bryan Ford and his 2004 paper, this is a relatively new theory. I spent the last few weeks working on a PEG-based parser generator for Go (think compiler-compiler, a-la yacc/bison). This gave birth to pigeon.
 Lang: en
 ---
