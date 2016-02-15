@@ -1,7 +1,7 @@
 ---
 Author: Martin Angers
 Title: Let the Doer Do it
-Date: 
+Date: 2016-02-16
 Description: There are lots of Go packages out there that make HTTP requests, maybe because they wrap a RESTful API or they do web crawling, etc. Regardless of the reason, at some point they use an *http.Client to make those requests. This article is a recommendation on how I believe this client should be managed.
 Lang: en
 ---
@@ -51,7 +51,7 @@ I mentioned earlier that, if there is no other way, the `http.RoundTripper` inte
 
 > RoundTrip should not modify the request, except for consuming and closing the Body, including on errors.
 
-So this is clearly not the level where we want to compose HTTP clients, since we want to have the possibility to modify the request (e.g. for signing a request before executing it).
+So although it could work for mocking responses, this is clearly not the level where we want to compose HTTP clients, since we want to have the possibility to modify the request (e.g. for signing a request before executing it).
 
 Enter the Doer...
 
