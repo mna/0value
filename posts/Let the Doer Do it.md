@@ -1,12 +1,14 @@
 ---
 Author: Martin Angers
-Title: Let the Doer Do it - a humble recommendation for Go packages that make HTTP requests
+Title: Let the Doer Do it
 Date: 
 Description: There are lots of Go packages out there that make HTTP requests, maybe because they wrap a RESTful API or they do web crawling, etc. Regardless of the reason, at some point they use an *http.Client to make those requests. This article is a recommendation on how I believe this client should be managed.
 Lang: en
 ---
 
-# Let the Doer Do it - a humble recommendation for Go packages that make HTTP requests
+# Let the Doer Do it
+
+<small>(a humble recommendation for Go packages that make HTTP requests)</small>
 
 There are lots of Go packages out there that make HTTP requests, maybe because they wrap a RESTful API or they do web crawling, etc. Regardless of the reason, at some point they use an `*http.Client` to make those requests. This article is a recommendation on how I believe this client should be managed in the context of reusable packages. But let's start by looking at various common ways it is used, and why this isn't optimal.
 
@@ -24,7 +26,9 @@ A reusable package should not hijack the default Client like this and behave as 
 
 ## Creating its own `*http.Client`
 
-An alternative approach is for the package to create its own `*http.Client` so it doesn't rely on the shared `DefaultClient` value (note that there is [nothing wrong in sharing an HTTP client in a concurrent way][clientthreadsafe] - that is not the point here, the "sharing" issue in this context is that the configuration of the client is shared). This is marginally better, but unless it provides a bunch of options to set client-level and transport-level timeouts and configuration, it means that the package decides for the caller how it should behave, when it is the caller that knows best for its specific use-case what timeout values make sense.
+An alternative approach is for the package to create its own `*http.Client` so it doesn't rely on the shared `DefaultClient` value (note that there is [nothing wrong in sharing an HTTP client in a concurrent way][clientthreadsafe] - that is not the point here, the "sharing" issue in this context is that the configuration of the client is shared).
+
+This is marginally better, but unless it provides a bunch of options to set client-level and transport-level timeouts and configuration, it means that the package decides for the caller how it should behave, when it is the caller that knows best for its specific use-case what timeout values make sense.
 
 And if the package provides all the options to configure the client, well here again, I believe there is a better way, and one that drastically simplifies the API of the package.
 
@@ -39,9 +43,9 @@ Well... It is significantly better than the previous alternatives. The caller ge
 
 Wait, where did that last one come from?
 
-You know how the `io.Reader` and `io.Writer` interfaces are such cool flexible abstractions? Like, you can [take any `io.Reader` and make it an `io.LimitedReader`][limitedreader]? Or the `http.Handler` interface for web servers, how you can do crazy things with middleware, combining them in various ways as presented by (my one-time colleague) [Tomás Senart at Gophercon 2015][tomas]?
+You know how the `io.Reader` and `io.Writer` interfaces are such cool flexible abstractions? Like, you can [take any `io.Reader` and make it an `io.LimitedReader`][limitedreader]? Or the `http.Handler` interface for web servers, how you can do crazy things with middleware, combining them in various ways as presented by [Tomás Senart at Gophercon 2015][tomas]?
 
-The interface enables that composition and separation of concerns. The same can be done for the HTTP client. What for? Maybe to add logging, or to sign the requests, etc. And of course, it also means that the client, being an interface, can easily be mocked to return pre-determined values to test the handling of responses and errors by the caller application without having to do the network calls.
+The interface enables that composition and separation of concerns. The same can be done for the HTTP client. What for? Maybe to add logging, or to sign the requests going through this client, etc. And of course, it also means that the client, being an interface, can easily be mocked to return pre-determined values to test the handling of responses and errors by the caller application without having to do the network calls.
 
 I mentioned earlier that, if there is no other way, the `http.RoundTripper` interface could be used to mock requests. It is at a lower level than the HTTP client - at the "transport" level, and the Go documentation mentions this about it:
 
