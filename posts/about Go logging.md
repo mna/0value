@@ -130,11 +130,13 @@ The downside is that some logging packages do not play well with that approach -
 
 ## Closing thoughts
 
-I've kept this article focused on the abstraction of the logger in the context of a reusable package regardless of the relative merits of the various approaches, but more generally and on a more philosophical (???) note, you should question yourself about the complexity of your logging solution. The proliferation of logging levels has been addressed in [this blog post by Dave Cheney][dch]. The [12-factor app][tfa] manifesto touches on the role of the app regarding logging.
+I've kept this article focused on the abstraction of the logger in the context of a reusable package regardless of the relative merits of the various approaches, but more generally and on a more philosophical (???) note, you should question yourself about the complexity of your logging solution. The proliferation of logging levels is addressed in [this blog post by Dave Cheney][dch]. The [12-factor app][tfa] manifesto touches on the role of the app regarding logging.
 
-Both tackle a different angle of logging, but both argue for a simpler, more straightforward approach. From the 12-factor app manifest:
+Both tackle a different angle of logging, but both argue for a simpler, more straightforward approach to logging from the point of view of the application. From the 12-factor app manifest:
 
-> A twelve-factor app never concerns itself with routing or storage of its output stream. It should not attempt to write to or manage logfiles. Instead, each running process writes its event stream, unbuffered, to stdout.
+> A twelve-factor app never concerns itself with routing or storage of its output stream.
+> It should not attempt to write to or manage logfiles. Instead, each running process
+> writes its event stream, unbuffered, to stdout.
 
 From Dave's post:
 
