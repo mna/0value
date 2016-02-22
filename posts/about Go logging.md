@@ -10,13 +10,13 @@ Lang: en
 
 <small>(a humble proposal on how to handle the logger for reusable packages)</small>
 
-TODO : intro...
+My [last post on handling HTTP clients][last] was generally well received as far as I know, so I'm going to push my luck and come back with a similar post, a recommendation for package writers this time on how to handle logging. There are many different logging packages, and it's not obvious how to support logging of important events in a reusable package in such a way that those events are logged in the caller application's preferred destination and format.
 
 ## Current state of Go loggers
 
 I checked many popular logging packages - those that had over 100 stars at that moment - based on the [awesome-go list][loggers], in addition to the standard library's `log` package. I omitted the `log/syslog` package as [it can be wrapped in a standard `*log.Logger`][syslog].
 
-That means the following packages:
+That means the following packages have been reviewed:
 
 - [log][1]
 - [Sirupsen/logrus][2]
@@ -29,7 +29,7 @@ That means the following packages:
 
 Note that there are many more logging packages, and I'm sorry for not including them in that list, I had to draw a line somewhere. Now if you're building a reusable package that needs to log some information, you're faced with an interesting problem - what should be the type of the logger accepted by your package?
 
-The stdlib itself uses, naturally, a `*log.Logger` value when it needs to support this (e.g. in `http.Server`, the `ErrorLog` field is such a value). But with so many fragmentation in the community, and even a package `golang/glog` provided in the language's official repositories, chances are good that the caller of your package does not use the stdlib's `log` package.
+The stdlib itself uses, naturally, a `*log.Logger` value when it needs to support this (e.g. in `http.Server`, the `ErrorLog` field is such a value, same in `httputil.ReverseProxy` and `cgi.Handler`). But with so many fragmentation in the community, and even a package `golang/glog` provided in the language's official repositories, chances are good that the caller of your package does not use the stdlib's `log` package.
 
 Let's look at the various APIs offered by those packages to log an event, starting with the standard library for reference.
 
@@ -106,7 +106,7 @@ Logrus acknowledges the issue of compatibility with the stdlib's logger (and the
     * Trace (compatible with a twist)
     * Warn (returns an error)
 
-What stands out is that althout logrus is interface-level compatible with the stdlib's logger, no other package is (the "Print" family is lacking, generally replaced by leveled logging with "Info", "Debug", "Error" and such). What the wide majority of packages do support, however, is the signature of the logging function, especially the "Printf"-style: `func(string, ...interface{})`.
+What stands out is that although logrus is interface-level compatible with the stdlib's logger, no other package is (the "Print" family is lacking, generally replaced by leveled logging with "Info", "Debug", "Error" and such). What the wide majority of packages do support, however, is the signature of the logging function, especially the "Printf"-style: `func(string, ...interface{})`.
 
 ## Accept a `LogFunc`
 
@@ -126,7 +126,7 @@ I don't think a reusable package should worry about the level of logging, it sho
 
 Similarly, the package should not worry about the formatting and the "backend" of the logger. Again, it's up to the caller to provide the method from a properly configured logger that will take care of rendering the logged message as desired, be it JSON in a file or plain text to some logging-as-a-service platform.
 
-The downside is that some logging packages do not play well with that approach - logxi being the outsider in this list, treating the arguments as key-value pairs instead of `fmt.Sprintf` style.
+The downside is that some logging packages do not play well with that approach - logxi being the outsider in this list, treating the arguments as key-value pairs instead of `fmt.Sprintf` style. But then, it should be easy enough for callers to write an adapter for those non-standard loggers (in this case, maybe generate a format string with placeholders for each key-value pair).
 
 ## Closing thoughts
 
@@ -145,6 +145,9 @@ From Dave's post:
 > 
 > Obviously these are debug and info levels, respectively.
 
+One thing I'd love to have would be the standard `log.Logger` writing JSON-formatted logs to stdout, as most popular logging-as-a-service platforms support queries using fields on JSON-formatted data, making it that much easier to find needles in your logs haystack. Some packages in those listed above support JSON formatting, but usually come with added baggage that I don't need.
+
+[last]: https://0value.com/Let-the-Doer-Do-it
 [1]: https://golang.org/pkg/log/
 [2]: https://github.com/Sirupsen/logrus
 [3]: https://github.com/golang/glog
@@ -158,3 +161,4 @@ From Dave's post:
 [stdiface]: https://godoc.org/github.com/Sirupsen/logrus#StdLogger
 [dch]: http://dave.cheney.net/2015/11/05/lets-talk-about-logging
 [tfa]: http://12factor.net/logs
+
