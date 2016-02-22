@@ -147,8 +147,6 @@ From Dave's post:
 > 
 > Obviously these are debug and info levels, respectively.
 
-One thing I'd love to have would be the standard `log.Logger` writing JSON-formatted logs to stdout, as most popular logging-as-a-service platforms support queries using fields on JSON-formatted data, making it that much easier to find needles in your logs haystack. Some packages in those listed above support JSON formatting, but usually come with added baggage that I don't need.
-
 [last]: https://0value.com/Let-the-Doer-Do-it
 [1]: https://golang.org/pkg/log/
 [2]: https://github.com/Sirupsen/logrus
