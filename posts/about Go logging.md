@@ -1,16 +1,14 @@
 ---
 Author: Martin Angers
-Title: About Go Logging
-Date: 
-Description: 
+Title: About Go logging for reusable packages
+Date: 2016-03-02
+Description: There are many different logging packages, and it's not necessarily obvious how to support logging of important events in a reusable package in such a way that those events are logged in the caller application's preferred destination and format.
 Lang: en
 ---
 
-# About Go logging
+# About Go logging for reusable packages
 
-<small>(a humble proposal on how to handle the logger for reusable packages)</small>
-
-My [last post on handling HTTP clients][last] was generally well received as far as I know, so I'm going to push my luck and come back with a similar post, a recommendation for package writers this time on how to handle logging. There are many different logging packages, and it's not obvious how to support logging of important events in a reusable package in such a way that those events are logged in the caller application's preferred destination and format.
+My [last post on handling HTTP clients][last] was generally well received as far as I know, so I'm going to push my luck and come back with a similar post, a recommendation for package writers this time on how to handle logging. There are many different logging packages, and it's not necessarily obvious how to support logging of important events in a reusable package in such a way that those events are logged in the caller application's preferred destination and format.
 
 ## Current state of Go loggers
 
@@ -27,16 +25,25 @@ That means the following packages have been reviewed:
 - [inconshreveable/log15][7]
 - [mgutz/logxi][8]
 
-Note that there are many more logging packages, and I'm sorry for not including them in that list, I had to draw a line somewhere. Now if you're building a reusable package that needs to log some information, you're faced with an interesting problem - what should be the type of the logger accepted by your package?
+There are many more logging packages, and I'm sorry for not including them in that list, but I had to draw a line somewhere. Now if you're building a reusable package that needs to log some information, you're faced with an interesting problem - what should be the type of the logger accepted by your package?
 
-The stdlib itself uses, naturally, a `*log.Logger` value when it needs to support this (e.g. in `http.Server`, the `ErrorLog` field is such a value, same in `httputil.ReverseProxy` and `cgi.Handler`). But with so many fragmentation in the community, and even a package `golang/glog` provided in the language's official repositories, chances are good that the caller of your package does not use the stdlib's `log` package.
+The stdlib itself uses, naturally, a `*log.Logger` value when it needs to support this (e.g. [in `http.Server`, the `ErrorLog` field][errlog] is such a value, [same in `httputil.ReverseProxy`][revproxy] and [`cgi.Handler`][cgi]). But with so many fragmentation in the community, and even the package `golang/glog` provided in the language's official repositories, chances are good that the caller of your package does not use the stdlib's `log` package.
 
 Let's look at the various APIs offered by those packages to log an event, starting with the standard library for reference.
 
 - **log**
-    * Print(...interface{}), Printf(string, ...interface{}), Println(...interface{})
-    * Panic(...interface{}), Panicf(string, ...interface{}), Panicln(...interface{})
-    * Fatal(...interface{}), Fatalf(string, ...interface{}), Fatalln(...interface{})
+    * The Print family: 
+        - `Print(...interface{})`
+        - `Printf(string, ...interface{})`
+        - `Println(...interface{})`
+    * The Panic family:
+        - `Panic(...interface{})`
+        - `Panicf(string, ...interface{})`
+        - `Panicln(...interface{})`
+    * The Fatal family:
+        - `Fatal(...interface{})`
+        - `Fatalf(string, ...interface{})`
+        - `Fatalln(...interface{})`
 
 Let's just focus on the signature for now using the `Print` family (the same comment applies to `Panic` and `Fatal` too). It's unclear to me why there's a `Print` and a `Println` variant, given that the `log` package adds a newline after the message if there was none. The difference is subtle and is the same as the one between `Sprint`:
 
@@ -46,16 +53,16 @@ and `Sprintln`:
 
 > Spaces are always added between operands [...]
 
-I guess it may be useful sometimes. So take note of the signature of the various functions, and let's check what the community-provided logging packages have to offer.
+I guess it may be useful sometimes? Anyway, take note of the signature of the various functions and let's check what the community-provided logging packages have to offer.
 
-- **Sirupsen/logrus** : logrus supports leveled logging, but all method signatures are the same as the stdlib's logger, so I'll just list the method names.
-    * Debug, Debugf, Debugln
-    * Error, Errorf, Errorln
-    * Fatal, Fatalf, Fatalln
-    * Info, Infof, Infoln
-    * Panic, Panicf, Panicln
-    * Print, Printf, Println
-    * Warn, Warnf, Warnln (and Warning, Warningf, Warningln, aliases to the `Warn*` family)
+- **Sirupsen/logrus** : logrus supports leveled logging, but all method signatures are the same as the stdlib's logger, so I'll just list the method families.
+    * Debug
+    * Error
+    * Fatal
+    * Info
+    * Panic
+    * Print
+    * Warn (and Warning, aliases to the `Warn*` family)
 
 Logrus acknowledges the issue of compatibility with the stdlib's logger (and the fragmentation of the logging abstraction) with the [StdLogger interface][stdiface].
 
@@ -93,8 +100,8 @@ Logrus acknowledges the issue of compatibility with the stdlib's logger (and the
 
 - **inconshreveable/log15** : leveled logging, in this case only the `Printf`-style of method signature is provided, in a compatible way.
     * Crit (conceptually, "Critf")
-    * Error (conceptually, "Errorf")
-    * Debug (you get the idea...)
+    * Debug (conceptually, "Debugf")
+    * Error (you get the idea...)
     * Info
     * Warn
 
@@ -120,9 +127,9 @@ package mypkg
 var LogFunc func(string, ...interface{}) = log.Printf
 ```
 
-And setting it to `nil` can be used to disable logging for this package. This doesn't enforce a coupling with any specific package and is already widely supported by existing loggers. To paraphrase Mr Carmack, sometimes, the elegant abstraction is just a function.
+And setting it to `nil` can be used to disable logging for this package. This doesn't enforce a coupling with any specific external package and is already widely supported by existing loggers. To paraphrase Mr Carmack, sometimes, the elegant abstraction is just a function.
 
-I don't think a reusable package should worry about the level of logging, it should either log something clearly important (e.g. the `http.Server` logs panics in a handler) or not log at all. Let the caller of the package worry about which level this should be logged to (e.g. pass in `seelog.Debugf` or a `glog.Infof`).
+I don't think a reusable package should worry about the level of logging, it should either log something clearly important (e.g. the `http.Server` logs panics in a handler) or not log at all. Let the caller of the package worry about which level this should be logged to (e.g. pass in `seelog.Debugf` or `glog.Infof`).
 
 Similarly, the package should not worry about the formatting and the "backend" of the logger. Again, it's up to the caller to provide the method from a properly configured logger that will take care of rendering the logged message as desired, be it JSON in a file or plain text to some logging-as-a-service platform.
 
@@ -130,7 +137,7 @@ The downside is that some logging packages do not play well with that approach -
 
 ## Closing thoughts
 
-I've kept this article focused on the abstraction of the logger in the context of a reusable package regardless of the relative merits of the various approaches, but more generally and on a more philosophical (???) note, you should question yourself about the complexity of your logging solution. The proliferation of logging levels is addressed in [this blog post by Dave Cheney][dch]. The [12-factor app][tfa] manifesto touches on the role of the app regarding logging.
+I've kept this article centered on the low-level abstraction of how to interact with an injected logger dependency in the context of a reusable package, regardless of the relative merits of the various approaches, but on a higher level, you should be mindful of the complexity of your logging solution. The proliferation of logging levels is addressed in [this blog post by Dave Cheney][dch]. The [12-factor app][tfa] manifesto touches on the role of the app regarding logging.
 
 Both tackle a different angle of logging, but both argue for a simpler, more straightforward approach to logging from the point of view of the application. From the 12-factor app manifest:
 
@@ -138,7 +145,7 @@ Both tackle a different angle of logging, but both argue for a simpler, more str
 > It should not attempt to write to or manage logfiles. Instead, each running process
 > writes its event stream, unbuffered, to stdout.
 
-From Dave's post:
+From Dave Cheney's post:
 
 > I believe that there are only two things you should log:
 >
@@ -156,6 +163,9 @@ From Dave's post:
 [6]: https://github.com/apex/log
 [7]: https://github.com/inconshreveable/log15
 [8]: https://github.com/mgutz/logxi
+[errlog]: https://golang.org/pkg/net/http/#Server
+[revproxy]: https://golang.org/pkg/net/http/httputil/#ReverseProxy
+[cgi]: https://golang.org/pkg/net/http/cgi/#Handler
 [loggers]: https://github.com/avelino/awesome-go#logging
 [syslog]: https://godoc.org/log/syslog#NewLogger
 [stdiface]: https://godoc.org/github.com/Sirupsen/logrus#StdLogger
