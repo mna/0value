@@ -10,6 +10,8 @@ Lang: en
 
 My [last post on handling HTTP clients][last] was generally well received as far as I know, so I'm going to push my luck and come back with a similar post, a recommendation for package writers this time on how to handle logging. There are many different logging packages, and it's not necessarily obvious how to support logging of important events in a reusable package in such a way that those events are logged in the caller application's preferred destination and format.
 
+**Update** : as was mentioned in [the thread on the golang bridge forum][bridge], a reusable package should avoid as much as possible to log anything, and return errors instead where it makes sense and let the caller worry about logging. That's what I was trying to say with "it should either log something clearly important or not log at all" towards the end, but it's worth making that clear right from the start.
+
 ## Current state of Go loggers
 
 I checked many popular logging packages - those that had over 100 stars at that moment - based on the [awesome-go list][loggers], in addition to the standard library's `log` package. I omitted the `log/syslog` package as [it can be wrapped in a standard `*log.Logger`][syslog].
@@ -171,4 +173,4 @@ From Dave Cheney's post:
 [stdiface]: https://godoc.org/github.com/Sirupsen/logrus#StdLogger
 [dch]: http://dave.cheney.net/2015/11/05/lets-talk-about-logging
 [tfa]: http://12factor.net/logs
-
+[bridge]: https://forum.golangbridge.org/t/blog-post-about-go-logging-for-reusable-packages/2078/4
