@@ -12,6 +12,8 @@ My [last post on handling HTTP clients][last] was generally well received as far
 
 **Update** : as was mentioned in [the thread on the golang bridge forum][bridge], a reusable package should avoid as much as possible to log anything, and return errors instead where it makes sense and let the caller worry about logging. That's what I was trying to say with "it should either log something clearly important or not log at all" towards the end, but it's worth making that clear right from the start.
 
+**Update 2** : the log15 package also uses key/value pairs in the variadic `...interface{}` list, as logxi does, I did miss that. Thanks to Chris Hines for pointing that out in the golang bridge forum.
+
 ## Current state of Go loggers
 
 I checked many popular logging packages - those that had over 100 stars at that moment - based on the [awesome-go list][loggers], in addition to the standard library's `log` package. I omitted the `log/syslog` package as [it can be wrapped in a standard `*log.Logger`][syslog].
@@ -100,7 +102,7 @@ Logrus acknowledges the issue of compatibility with the stdlib's logger (and the
     * Info, Infof
     * Warn, Warnf
 
-- **inconshreveable/log15** : leveled logging, in this case only the `Printf`-style of method signature is provided, in a compatible way.
+- **inconshreveable/log15** : leveled logging, in this case only the `Printf`-style of method signature is provided, in a compatible way. **Update** : log15 actually uses key/value pairs of arguments like logxi (see next bullet), so although the signature is compatible with the stdlib Printf, it does not share the same semantics.
     * Crit (conceptually, "Critf")
     * Debug (conceptually, "Debugf")
     * Error (you get the idea...)
