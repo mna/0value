@@ -8,6 +8,7 @@ ${CSSDIR}/main.css: $(wildcard ${SASSDIR}/*.scss)
 .PHONY: generate
 generate:
 	trofaf -g -b ${BASEURL} -n "ø value" -t "a wysiwyg hypertext cyberblog"
+	scripts/extensionify.sh
 
 .PHONY: clear
 clear:
