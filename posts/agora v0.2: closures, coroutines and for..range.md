@@ -150,7 +150,7 @@ func rangeFn(n) {
 		yield i
 	}
 }
-// Use it in a range loop (additional arguments - such 
+// Use it in a range loop (additional arguments - such
 // as 4 in this case - are passed to the function)
 for i := range rangeFn, 4 {
 	fmt.Println(i)
@@ -186,8 +186,8 @@ Another big thing will be to support multiple return values (and yield values). 
 Until then, have fun with v0.2!
 
 [1]: http://0value.com/introducing-agora--a-dynamic--embeddable-programming-language-built-with-Go
-[2]: https://github.com/PuerkitoBio/agora
-[3]: https://github.com/PuerkitoBio/agora/issues?milestone=2&state=closed
-[4]: https://github.com/PuerkitoBio/agora/wiki
-[5]: https://github.com/PuerkitoBio/agora/wiki/Language-reference
-[6]: https://github.com/PuerkitoBio/agora/wiki/Roadmap
+[2]: https://github.com/mna/agora
+[3]: https://github.com/mna/agora/issues?milestone=2&state=closed
+[4]: https://github.com/mna/agora/wiki
+[5]: https://github.com/mna/agora/wiki/Language-reference
+[6]: https://github.com/mna/agora/wiki/Roadmap

@@ -116,8 +116,8 @@ Many among you suggested various plugins following the initial post. Here they a
 [supertab]: https://github.com/ervandew/supertab
 [autoclose]: https://github.com/Townk/vim-autoclose
 [yankstack]: https://github.com/maxbrunsfeld/vim-yankstack
-[tw]: https://twitter.com/PuerkitoBio
-[issue]: https://github.com/PuerkitoBio/0value/issues
+[tw]: https://twitter.com/___mna___
+[issue]: https://github.com/mna/0value/issues
 [st]: http://www.sublimetext.com/
 [savectags]: http://stackoverflow.com/questions/155449/vim-auto-generate-ctags
 [syntastic]: https://github.com/scrooloose/syntastic

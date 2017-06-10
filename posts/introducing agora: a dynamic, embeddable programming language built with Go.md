@@ -118,12 +118,12 @@ I had a blast writing this v0.1 release. Go is truly my language of choice nowad
 
 There are a few things I haven't talked about, this is merely an overview of the language, so I guess there will be other blog posts on agora in the future. Until then, hopefully you'll feel compelled to give it a try!
 
-[simdiff]: https://github.com/PuerkitoBio/agora/wiki/Similarities-and-differences-with-Go
-[agora]: https://github.com/PuerkitoBio/agora
-[start]: https://github.com/PuerkitoBio/agora/wiki/Getting-started
-[api]: https://github.com/PuerkitoBio/agora/wiki/Native-Go-API
-[cli]: https://github.com/PuerkitoBio/agora/wiki/Command-line-tool
-[wiki]: https://github.com/PuerkitoBio/agora/wiki
-[roadmap]: https://github.com/PuerkitoBio/agora/wiki/Roadmap
-[src]: https://github.com/PuerkitoBio/agora/tree/master/testdata/src
+[simdiff]: https://github.com/mna/agora/wiki/Similarities-and-differences-with-Go
+[agora]: https://github.com/mna/agora
+[start]: https://github.com/mna/agora/wiki/Getting-started
+[api]: https://github.com/mna/agora/wiki/Native-Go-API
+[cli]: https://github.com/mna/agora/wiki/Command-line-tool
+[wiki]: https://github.com/mna/agora/wiki
+[roadmap]: https://github.com/mna/agora/wiki/Roadmap
+[src]: https://github.com/mna/agora/tree/master/testdata/src
 

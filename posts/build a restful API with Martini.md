@@ -42,7 +42,7 @@ type DB interface {
 	Delete(id int)
 }
 ```
- 
+
 The album data structure is defined like this:
 
 ```
@@ -294,7 +294,7 @@ If you intend to build a production-quality API, be aware that there are a few i
 However, this article should've given you a taste of how it can be done with Martini.
 
 [martini]: http://martini.codegangsta.io
-[mapiex]: https://github.com/PuerkitoBio/martini-api-example
+[mapiex]: https://github.com/mna/martini-api-example
 [inject]: https://github.com/codegangsta/inject
 [handler]: http://golang.org/pkg/net/http/#Handler
 [api]: http://www.vinaysahni.com/best-practices-for-a-pragmatic-restful-api

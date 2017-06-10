@@ -83,7 +83,7 @@ How could we make this Go coroutine run? A skeleton of the `Resume()` method cou
 func (c *Coroutine) Resume() (int, error) {
 	switch c.status {
 	case StSuspended:
-		// For the initial start, the yld channel should be created, and the 
+		// For the initial start, the yld channel should be created, and the
 		// coroutine function called. On subsequent calls, it should "unblock"
 		// the coroutine function until it yields another value.
 	case StDead:
@@ -314,7 +314,7 @@ From a caller's perspective, here's a very simple (and silly) example of how the
 package main
 
 import (
-	"github.com/PuerkitoBio/gocoro"
+	"github.com/mna/gocoro"
 	"fmt"
 )
 
@@ -330,7 +330,7 @@ func main() {
 	c := gocoro.New(corofn)
 	for i, err := c.Resume(); err == nil; i, err = c.Resume() {
 		fmt.Println(i)
-	}  
+	}
 }
 ```
 
@@ -389,12 +389,12 @@ Well, Go is statically-typed, but if you want to achieve this kind of "anything 
 type Fn func(Yielder, ...interface{}) interface{}
 
 type coroutine struct {
-	fn      Fn               
+	fn      Fn
 	rsm     chan interface{} // The resume channel passes any value
 	yld     chan interface{} // The yield channel passes any value
-	status  Status           
-	started bool            
-	err     error          
+	status  Status
+	started bool
+	err     error
 }
 
 // Yield now accepts variadic arguments of any type, returns any type
@@ -445,19 +445,19 @@ Another implementation option would be to use [Go's `reflect` package][reflect].
 But I haven't taken it any further yet (see [the `make-func` branch][mfbr] of the repo for *eventual* progress on this front). Feel free to [send pull requests][pr] or [file an issue][issue] for discussion if you want to share other ways to implement this.
 
 [coro]: http://www.lua.org/pil/9.html
-[lune]: https://github.com/PuerkitoBio/lune
+[lune]: https://github.com/mna/lune
 [goleak]: https://groups.google.com/forum/#!topic/golang-nuts/uiySuH8_3Y4
 [luagc]: http://stackoverflow.com/questions/3642808/abandoning-coroutines
 [wiki]: https://en.wikipedia.org/wiki/Coroutine
 [chan]: http://golang.org/ref/spec#Channel_types
-[gocoro]: https://github.com/PuerkitoBio/gocoro
+[gocoro]: https://github.com/mna/gocoro
 [range]: http://golang.org/ref/spec#For_statements
 [type]: http://golang.org/ref/spec#Type_assertions
-[pr]: https://github.com/PuerkitoBio/gocoro/pulls
-[sibr]: https://github.com/PuerkitoBio/gocoro/tree/simple-int
-[genbr]: https://github.com/PuerkitoBio/gocoro/tree/generic
+[pr]: https://github.com/mna/gocoro/pulls
+[sibr]: https://github.com/mna/gocoro/tree/simple-int
+[genbr]: https://github.com/mna/gocoro/tree/generic
 [vargo]: http://golang.org/ref/spec#Passing_arguments_to_..._parameters
-[mfbr]: https://github.com/PuerkitoBio/gocoro/tree/make-func
-[issue]: https://github.com/PuerkitoBio/gocoro/issues
+[mfbr]: https://github.com/mna/gocoro/tree/make-func
+[issue]: https://github.com/mna/gocoro/issues
 [reflect]: http://golang.org/pkg/reflect/
 

@@ -124,13 +124,13 @@ The [complete pigeon documentation can be found on the godoc page][godoc], pleas
 [cfg]: http://en.wikipedia.org/wiki/Context-free_grammar
 [bnf]: http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form
 [ford]: http://pdos.csail.mit.edu/~baford/packrat/popl04/peg-popl04.pdf
-[pigeon]: https://github.com/PuerkitoBio/pigeon
+[pigeon]: https://github.com/mna/pigeon
 [pegjs]: http://pegjs.org/
 [lint]: https://github.com/golang/lint
 [vet]: http://godoc.org/golang.org/x/tools/cmd/vet
 [boot]: http://en.wikipedia.org/wiki/Bootstrapping_(compilers)
 [goboot]: https://docs.google.com/document/d/1OaatvGhEAq7VseQ9kkavxKNAfepWy2yhPUBs96FGV28/edit
 [ast]: http://en.wikipedia.org/wiki/Abstract_syntax_tree
-[godoc]: https://godoc.org/github.com/PuerkitoBio/pigeon
-[issue]: https://github.com/PuerkitoBio/pigeon/issues
-[twit]: https://twitter.com/PuerkitoBio
+[godoc]: https://godoc.org/github.com/mna/pigeon
+[issue]: https://github.com/mna/pigeon/issues
+[twit]: https://twitter.com/___mna___

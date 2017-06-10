@@ -23,7 +23,7 @@ html.no-js[lang="en"]
 							a[href="/"] #{SiteName}
 						h2 #{TagLine}
 					div.right.social
-						a.huge.github[href="https://github.com/PuerkitoBio"][title="@PuerkitoBio on GitHub"]
+						a.huge.github[href="https://github.com/mna"][title="@mna on GitHub"]
 							span.icon-github-circled
 						a.huge.twitter[href="https://twitter.com/___mna___"][title="@___mna___ on Twitter"]
 							span.icon-twitter
@@ -63,10 +63,10 @@ html.no-js[lang="en"]
 								a[href=$p.Slug] #{$p.Title}
 				div.container.middle
 					small
-						| 2013-2016 Martin Angers
+						| 2013-2017 Martin Angers
 						a[href="https://creativecommons.org/licenses/by-sa/3.0/deed.en_US"] CC BY-SA 3.0
 						| , built with
-						a[href="https://github.com/PuerkitoBio/trofaf"] trofaf
+						a[href="https://github.com/mna/trofaf"] trofaf
 		script
 			if (document.querySelectorAll && "classList" in document.documentElement) {
 				codes = document.querySelectorAll("pre code");

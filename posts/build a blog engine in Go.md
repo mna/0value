@@ -40,7 +40,7 @@ type ShortPost struct {
 	ModTime time.Time
 }
 
-// The LongPost structure adds the parsed content of the post 
+// The LongPost structure adds the parsed content of the post
 // to the embedded ShortPost information.
 type LongPost struct {
 	*ShortPost
@@ -322,10 +322,10 @@ That's all there is to it! I've skipped over some implementation details, but th
 [gbt]: https://github.com/krautchan/gbt
 [notif]: https://github.com/howeyc/fsnotify
 [godev]: https://code.google.com/p/go/issues/detail?id=4068
-[ghost]: https://github.com/PuerkitoBio/ghost
+[ghost]: https://github.com/mna/ghost
 [filesrv]: http://tip.golang.org/pkg/net/http/#FileServer
 [flags]: https://github.com/jessevdk/go-flags
-[trofaf]: https://github.com/PuerkitoBio/trofaf
+[trofaf]: https://github.com/mna/trofaf
 [http]: http://tip.golang.org/pkg/net/http/
 [bf]: https://github.com/russross/blackfriday
 [amber]: https://github.com/eknkc/amber

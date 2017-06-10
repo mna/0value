@@ -2,7 +2,7 @@
 Author: Martin Angers
 Title: Internals of agora functions
 Date
-Description: 
+Description:
 Lang: en
 ---
 
@@ -110,14 +110,14 @@ type agoraFuncVM struct {
 	val   *agoraFuncVal
 	proto *agoraFuncDef
 	debug bool
-	
+
 	// Stacks and counters
 	pc     int   // program counter
 	stack  []Val // function stack
 	sp     int
 	rstack []gocoro.Caller // range native coroutine stack
 	rsp    int
-	
+
 	// Variables
 	vars map[string]Val
 	this Val
@@ -130,5 +130,5 @@ Besides the references to the function value and prototype, there's the expected
 The range stack is special and is used to implement the last of the big three features, the `for range` construct. Agora's `for range` is quite versatile and can be used to range over numbers, strings, objects and coroutines - so that custom iterators can be built.
 
 [1]: http://www.0value.com/introducing-agora--a-dynamic--embeddable-programming-language-built-with-Go
-[2]: https://github.com/PuerkitoBio/agora/issues?milestone=2&page=1&state=closed
-[3]: https://github.com/PuerkitoBio/agora
+[2]: https://github.com/mna/agora/issues?milestone=2&page=1&state=closed
+[3]: https://github.com/mna/agora

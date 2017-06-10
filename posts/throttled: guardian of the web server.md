@@ -234,7 +234,7 @@ A quick word on the Custom function, it accepts any `Limiter` as argument and re
 
 That's it for now, hope you like it! [Fork, star, test, report issues and PR at will][throttled]!
 
-[throttled]: https://github.com/PuerkitoBio/throttled
+[throttled]: https://github.com/throttled/throttled
 [siege]: http://www.joedog.org/siege-home/
 [gogit]: http://golang.org/misc/git/pre-commit
 [lint]: https://github.com/golang/lint
