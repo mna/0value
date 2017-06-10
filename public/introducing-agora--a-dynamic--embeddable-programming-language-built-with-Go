@@ -1,0 +1,230 @@
+<!DOCTYPE html><!-- From HTML5 Boilerplate -->
+<html class="no-js" lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>Introducing agora: a dynamic, embeddable programming language built with Go</title>
+		<meta name="description" content="I&#39;ve been toying with this idea for a while. To bring a simple, dynamic language to complement Go - somewhat like what Lua is to C. I&#39;ve built to some working state various virtual machines in Go, but for the last few months, I&#39;ve focused on designing from scratch a simple and clean virtual machine to run a new programming language, agora, that will feel right at home for Go developers." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link href="/css/main.css" rel="stylesheet" />
+		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
+	</head>
+	<body>
+		<div class="content">
+			
+			<header>
+				<hgroup>
+					<div class="left title">
+						<h1>
+							<a href="/">ø value</a>
+						</h1>
+						<h2>a wysiwyg hypertext cyberblog</h2>
+					</div>
+					<div class="right social">
+						<a class="huge github" href="https://github.com/mna" title="@mna on GitHub">
+							<span class="icon-github-circled"></span>
+						</a>
+						<a class="huge twitter" href="https://twitter.com/___mna___" title="@___mna___ on Twitter">
+							<span class="icon-twitter"></span>
+						</a>
+					</div>
+					<div class="clearfix"></div>
+				</hgroup>
+			</header>
+			<hr />
+			<nav>
+				<div class="container">
+					<div class="left quarter">
+						<a class="huge" href="my-Go-centric-Vim-setup" title="My (Go-centric) Vim Setup">«</a>
+					</div>
+					<div class="middle big half">
+						<span>Introducing agora: a dynamic, embeddable programming language built with Go</span>
+					</div>
+					<div class="right quarter">
+						<a class="huge" href="agora-v0-2--closures--coroutines-and-for--range" title="Agora v0.2: Closures, Coroutines and For-Range">»</a>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</nav>
+			<hr />
+			<main>
+				<article lang="en"><h1>Introducing agora: a dynamic, embeddable programming language built with Go</h1>
+
+<p>I&rsquo;ve been toying with this idea for a while. To bring a simple, dynamic language to complement Go - somewhat like what Lua is to C. I&rsquo;ve built to some working state various virtual machines in Go, but for the last few months, I&rsquo;ve focused on designing from scratch a simple and clean virtual machine to run a <a href="https://github.com/mna/agora">new programming language, agora</a>, that will feel right at home for Go developers.</p>
+
+<p>Now, I&rsquo;m somewhat a <em>dilettante</em> when it comes to compiler and programming language design, and I&rsquo;m sure there are a few things that will look weird or plain wrong, but this is merely a <code>v0.1</code> release and my goal at this point was just to get this project off the ground and prove that it can fly (technically, at least!).</p>
+
+<h2>Design goals</h2>
+
+<p>The high-level goals of the language are clear and set in stone. Everything else isn&rsquo;t - meaning things may change just about everywhere in the language: the compiler, the syntax, the stdlib, the runtime, etc.</p>
+
+<p>Those goals are:</p>
+
+<ul>
+<li>A dynamically-typed language</li>
+<li>An embeddable language</li>
+<li>A garbage-collected language</li>
+<li>Dynamically-loaded modules</li>
+<li>A syntax similar to Go</li>
+</ul>
+
+<p>Here is how it looks as of v0.1:</p>
+
+<pre><code>// Output: Hello, Agora !
+fmt := import(&quot;fmt&quot;)
+func greet(name) {
+    fmt.Println(&quot;Hello,&quot;, name, &quot;!&quot;)
+}
+greet(&quot;Agora&quot;)
+</code></pre>
+
+<p>There is a <a href="https://github.com/mna/agora/wiki/Getting-started">getting started</a> article on the wiki that provides other useful introductory information. Much more source code examples can be found in <a href="https://github.com/mna/agora/tree/master/testdata/src">/testdata/src</a>.</p>
+
+<h3>Dynamically-typed</h3>
+
+<p>Variables, arguments and functions&rsquo; return value have no types in agora, only values are typed. And values may be any one of those types:</p>
+
+<ul>
+<li>Number (represented as Go&rsquo;s <code>float64</code>)</li>
+<li>String (same as Go&rsquo;s <code>string</code>)</li>
+<li>Bool (same as Go&rsquo;s <code>bool</code>)</li>
+<li>Nil (roughly like Go&rsquo;s <code>nil</code>)</li>
+<li>Func (can be an agora function, or a native Go function)</li>
+<li>Object (an associative array, roughly like Go&rsquo;s <code>map</code> but feeling more like a Lua table or a Javascript object)</li>
+</ul>
+
+<h3>Embedded</h3>
+
+<p>Agora is a collection of Go packages, and may easily be imported and embedded in a Go program. There is a <a href="https://github.com/mna/agora/wiki/Native-Go-API">native Go API</a> available for Go programs to initialize, configure and run agora code. The agora command-line interface is an example of a Go host running agora programs.</p>
+
+<p>A Go program could embed agora to allow for dynamically-loaded plugins, for example.</p>
+
+<h3>Garbage-collected</h3>
+
+<p>Agora is garbage-collected using the native Go GC. All variables are released as soon as they go out of scope in the agora runtime, so that Go&rsquo;s GC can collect them.</p>
+
+<h3>Dynamically-loaded</h3>
+
+<p>An agora source code file is called a <em>module</em>, and modules are loaded dynamically via the <code>import</code> built-in function that takes a string identifier as argument, similar to Go&rsquo;s <code>import</code> keyword.</p>
+
+<p>A <code>ModuleResolver</code> interface allows for plugging custom resolvers into agora, but out-of-the-box the runtime provides a <code>FileResolver</code> type to look for the module in the file system.</p>
+
+<p>Everything in a module is private, there is no uppercase rule for exported symbols. The only thing exposed by a module is its return value, because a module is implicitly a function so it can return a value. The uppercase is still used as a convention for publicly exported values in the stdlib.</p>
+
+<h3>Syntax similar to Go&hellip;</h3>
+
+<p>The syntax is very similar to Go, and where it makes sense, the same notation is used. In fact, the current scanner is adapted from Go&rsquo;s scanner package.</p>
+
+<h3>&hellip;but not a clone</h3>
+
+<p>The goal is obviously not to make a clone, so  it differs in some places too, and not just regarding the types.</p>
+
+<p>The idea is to provide a <em>looser</em> and simple companion to the statically-typed and statically-linked Go code. So agora also offers:</p>
+
+<ul>
+<li>A ternary operator (<code>?:</code>)</li>
+<li>The <code>args</code> reserved identifier. A caller may pass more or less arguments than expected by the callee. Missing arguments are set to <code>nil</code>, and in any case, the full list of received arguments are available via the <code>args</code> reserved identifier (an array-like object).</li>
+<li><em>Truthy</em> and <em>falsy</em> values, other than boolean <code>true</code> and <code>false</code>. The falsy values are <code>nil</code>, empty string and <code>0</code>.</li>
+<li>Overloaded operators via objects meta-methods (i.e. <code>__add</code>, <code>__bool</code>, etc.).</li>
+</ul>
+
+<p>There&rsquo;s an article on the <a href="https://github.com/mna/agora/wiki/Similarities-and-differences-with-Go">similarities and differences between agora and Go</a> in the wiki.</p>
+
+<h2>The CLI</h2>
+
+<p>Agora provides a command-line interface to build and run programs without having to write a custom Go host.</p>
+
+<p>The <code>agora</code> command offers a few sub-commands, most importantly <code>agora run FILE</code> to execute an agora source code file.</p>
+
+<p>The <em>shebang</em> (#!) notation is also supported by the compiler (the scanning stage treats the line as a comment), so that shell scripts can be written in agora:</p>
+
+<pre><code>#!/usr/bin/env agora run -R
+fmt := import(&quot;fmt&quot;)
+fmt.Println(&quot;Hello from agora!&quot;)
+</code></pre>
+
+<p>See the article on the <a href="https://github.com/mna/agora/wiki/Command-line-tool">command-line tool</a> on the wiki for more details.</p>
+
+<h2>The stdlib</h2>
+
+<p>The standard library offers minimal support at the moment. This is because things are likely to change and evolve quite a bit, with some features that may alter how best to write the API, so I don&rsquo;t want to invest too heavily in it for now.</p>
+
+<p>Also, it is currently unknown how people may use this language (or <em>if</em> it will be used, period - although regardless I will surely keep at it, it&rsquo;s just too much fun!), so I focused on building the minimal set to be able to write useful programs, but really not much more. The native API makes it trivial to write modules in userland, so it seems like a good option to see what&rsquo;s needed before vetting them into the stdlib.</p>
+
+<h2>The future</h2>
+
+<p>As mentioned in a few places in the <a href="https://github.com/mna/agora/wiki">wiki documentation</a> (that I encourage you to read if you have questions about the language, I think the doc is fairly exhaustive for such an early release), this v0.1 was about building and testing a decent runtime environment.</p>
+
+<p>There are zero benchmarks, zero optimizations, performance is <strong>not</strong> a concern at this point. The same goes for the compiler, arguably the sorryest package in the project. The current compiler is <em>barely</em> good enough to run code and test the runtime, which is what is needed right now. There are probably syntactically or semantically valid statements that will not compile, and there are probably syntactically or semantically invalid statements that will compile (and panic at runtime). Please file an issue if you find such cases, but the priority for the short-term next versions (v0.2 and v0.3) is to complete the missing features of the language, live with it and test it and stabilize it before moving on to refactor (rewrite, honestly) the compiler and work on optimizations.</p>
+
+<p>There is a wiki article for <a href="https://github.com/mna/agora/wiki/Roadmap">the roadmap</a> of the project.</p>
+
+<h2>&lsquo;til v0.2</h2>
+
+<p>I had a blast writing this v0.1 release. Go is truly my language of choice nowadays, and I think it played a big part in what I feel is a simple and clean design of the runtime and the native API.</p>
+
+<p>There are a few things I haven&rsquo;t talked about, this is merely an overview of the language, so I guess there will be other blog posts on agora in the future. Until then, hopefully you&rsquo;ll feel compelled to give it a try!</p>
+</article>
+				<p class="meta">
+					<time datetime="2013-09-17">published 2013-09-17</time>
+					<time datetime="2017-06-10">and last updated 2017-06-10</time>
+				</p>
+			</main>
+			<hr />
+			<footer>
+				<ul class="container middle">
+					<li>
+						<time datetime="2016-03-02">2016-03-02</time>
+						<a href="about-Go-logging">About Go logging for reusable packages</a>
+					</li>
+					<li>
+						<time datetime="2016-02-16">2016-02-16</time>
+						<a href="Let-the-Doer-Do-it">Let the Doer Do it</a>
+					</li>
+					<li>
+						<time datetime="2015-04-13">2015-04-13</time>
+						<a href="A-PEG-parser-generator-for-Go">A PEG parser generator for Go</a>
+					</li>
+					<li>
+						<time datetime="2014-06-16">2014-06-16</time>
+						<a href="Dealing-with-binary-files-and-uglified-json-in-Vim">Dealing with binary files and uglified JSON in Vim</a>
+					</li>
+					<li>
+						<time datetime="2014-02-19">2014-02-19</time>
+						<a href="throttled--guardian-of-the-web-server">Throttled: Guardian Of The Web Server</a>
+					</li>
+				</ul>
+				<div class="container middle">
+					<small>
+						2013-2017 Martin Angers
+						<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.en_US">CC BY-SA 3.0</a>
+						, built with
+						<a href="https://github.com/mna/trofaf">trofaf</a>
+					</small>
+				</div>
+			</footer>
+		</div>
+		<script>
+			if (document.querySelectorAll && "classList" in document.documentElement) {
+				codes = document.querySelectorAll("pre code");
+				for (var i = 0; i < codes.length; ++i) {
+					codes[i].classList.add("prettyprint", "lang-go");
+				}
+				el = document.createElement("script");
+				sc = document.getElementsByTagName("script")[0];
+				el.async = 1;
+				el.src = "https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js";
+				sc.parentNode.insertBefore(el, sc);
+			}
+		</script>
+		<script>
+			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+			ga('create', 'UA-42479727-1', '0value.com');
+			ga('send', 'pageview');
+		</script>
+	</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html><!-- From HTML5 Boilerplate -->
+<html class="no-js" lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>Dealing with binary files and uglified JSON in Vim</title>
+		<meta name="description" content="Long uglified JSON files can be painful to look at. Same thing with binary files that you want to scan visually. Thankfully, a simple Vim configuration can make your life much better." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link href="/css/main.css" rel="stylesheet" />
+		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
+	</head>
+	<body>
+		<div class="content">
+			
+			<header>
+				<hgroup>
+					<div class="left title">
+						<h1>
+							<a href="/">ø value</a>
+						</h1>
+						<h2>a wysiwyg hypertext cyberblog</h2>
+					</div>
+					<div class="right social">
+						<a class="huge github" href="https://github.com/mna" title="@mna on GitHub">
+							<span class="icon-github-circled"></span>
+						</a>
+						<a class="huge twitter" href="https://twitter.com/___mna___" title="@___mna___ on Twitter">
+							<span class="icon-twitter"></span>
+						</a>
+					</div>
+					<div class="clearfix"></div>
+				</hgroup>
+			</header>
+			<hr />
+			<nav>
+				<div class="container">
+					<div class="left quarter">
+						<a class="huge" href="throttled--guardian-of-the-web-server" title="Throttled: Guardian Of The Web Server">«</a>
+					</div>
+					<div class="middle big half">
+						<span>Dealing with binary files and uglified JSON in Vim</span>
+					</div>
+					<div class="right quarter">
+						<a class="huge" href="A-PEG-parser-generator-for-Go" title="A PEG parser generator for Go">»</a>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</nav>
+			<hr />
+			<main>
+				<article lang="en"><h1>Dealing with binary files and uglified JSON in Vim</h1>
+
+<p>Long uglified JSON files can be painful to look at. Same thing with binary files that you want to scan visually. Thankfully, a simple Vim configuration can make your life much better.</p>
+
+<h2>Pretty-print JSON</h2>
+
+<p>First for JSON files, the convenient <a href="http://stedolan.github.io/jq/"><code>jq</code> command</a> can quickly pretty-print JSON files:</p>
+
+<pre><code>$ jq . some-file.json 
+</code></pre>
+
+<p>From this shell command, it is easy enough to integrate this into Vim. The following <code>.vimrc</code> configuration binds the command to the <code>&lt;leader&gt;-j</code> key (I have my leader key mapped to comma, so for me <code>,j</code> automatically pretty-prints the current json file):</p>
+
+<pre><code>nnoremap &lt;leader&gt;j :%!jq .&lt;CR&gt;
+</code></pre>
+
+<p>And should you need to return to uglified json, the <code>-c</code> flag of the <code>jq</code> tool does exactly that, so:</p>
+
+<pre><code>nnoremap &lt;leader&gt;J :%!jq . -c&lt;CR&gt;
+</code></pre>
+
+<p><code>&lt;leader&gt;-J</code> will return the current json file to its compact representation.</p>
+
+<h2>Display binary files as hexadecimal</h2>
+
+<p>The solution is similar for binary files. Using the <code>xxd</code> command, one can convert binary files to cleanly readable hex (if there is such a thing):</p>
+
+<pre><code>$ xxd some-binary
+0000000: 1f8b 0800 0000 0000 0003 ecfd 6973 dbb8  ............is..
+0000010: d200 0a7f d6fd 15a9 3975 3e8e c59d d414  ........9u&gt;.....
+0000020: e73e 654b f2c4 354e e263 6532 55f3 e516  .&gt;eK..5N.ce2U...
+</code></pre>
+
+<p>The following .vimrc configuration makes this conversion available from within Vim, with the <code>&lt;leader&gt;-h</code> key combination:</p>
+
+<pre><code>nnoremap &lt;leader&gt;h :%!xxd&lt;CR&gt;
+</code></pre>
+
+<p>Thanks to xxd&rsquo;s <code>-r</code> flag that reverses hex to binary, we can also configure this mapping:</p>
+
+<pre><code>nnoremap &lt;leader&gt;H :%!xxd -r&lt;CR&gt;
+</code></pre>
+
+<p>There are some issues with this simple command, e.g. if you use it multiple times in a row on the same buffer, but I feel this is not worth the more complex configuration just to prevent this behaviour.</p>
+
+<h2>The pattern</h2>
+
+<p>There is a common pattern here, obvious to all long-time Vim users: any command available in the shell can be called from Vim with <code>!&lt;cmd&gt;</code>, and the currently edited Vim file can be referenced with <code>%</code>. So it would be very easy, given the appropriate tool, to configure similar key bindings for XML files.</p>
+
+<p>Credit for the binary-to-hex idea goes to <a href="http://www.kevssite.com/2009/04/21/using-vi-as-a-hex-editor/">this blog post</a>.</p>
+</article>
+				<p class="meta">
+					<time datetime="2014-06-16">published 2014-06-16</time>
+					<time datetime="2017-06-10">and last updated 2017-06-10</time>
+				</p>
+			</main>
+			<hr />
+			<footer>
+				<ul class="container middle">
+					<li>
+						<time datetime="2016-03-02">2016-03-02</time>
+						<a href="about-Go-logging">About Go logging for reusable packages</a>
+					</li>
+					<li>
+						<time datetime="2016-02-16">2016-02-16</time>
+						<a href="Let-the-Doer-Do-it">Let the Doer Do it</a>
+					</li>
+					<li>
+						<time datetime="2015-04-13">2015-04-13</time>
+						<a href="A-PEG-parser-generator-for-Go">A PEG parser generator for Go</a>
+					</li>
+					<li>
+						<time datetime="2014-06-16">2014-06-16</time>
+						<a href="Dealing-with-binary-files-and-uglified-json-in-Vim">Dealing with binary files and uglified JSON in Vim</a>
+					</li>
+					<li>
+						<time datetime="2014-02-19">2014-02-19</time>
+						<a href="throttled--guardian-of-the-web-server">Throttled: Guardian Of The Web Server</a>
+					</li>
+				</ul>
+				<div class="container middle">
+					<small>
+						2013-2017 Martin Angers
+						<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.en_US">CC BY-SA 3.0</a>
+						, built with
+						<a href="https://github.com/mna/trofaf">trofaf</a>
+					</small>
+				</div>
+			</footer>
+		</div>
+		<script>
+			if (document.querySelectorAll && "classList" in document.documentElement) {
+				codes = document.querySelectorAll("pre code");
+				for (var i = 0; i < codes.length; ++i) {
+					codes[i].classList.add("prettyprint", "lang-go");
+				}
+				el = document.createElement("script");
+				sc = document.getElementsByTagName("script")[0];
+				el.async = 1;
+				el.src = "https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js";
+				sc.parentNode.insertBefore(el, sc);
+			}
+		</script>
+		<script>
+			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+			ga('create', 'UA-42479727-1', '0value.com');
+			ga('send', 'pageview');
+		</script>
+	</body>
+</html>

@@ -1,0 +1,419 @@
+<!DOCTYPE html><!-- From HTML5 Boilerplate -->
+<html class="no-js" lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>Build a blog engine in Go</title>
+		<meta name="description" content="I built a static blog generator in Go. It&#39;s called trofaf because that&#39;s its name. Get this: it takes markdown files, reads some YAML front matter, and generates good ol&#39; HTML files. I can already smell the Nobel. Anyway, the goal of this post is not to brag about the novelty of the thing, but to show how easy it is to get this done with Go&#39;s rich standard library and some fine userland packages." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link href="/css/main.css" rel="stylesheet" />
+		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
+	</head>
+	<body>
+		<div class="content">
+			
+			<header>
+				<hgroup>
+					<div class="left title">
+						<h1>
+							<a href="/">ø value</a>
+						</h1>
+						<h2>a wysiwyg hypertext cyberblog</h2>
+					</div>
+					<div class="right social">
+						<a class="huge github" href="https://github.com/mna" title="@mna on GitHub">
+							<span class="icon-github-circled"></span>
+						</a>
+						<a class="huge twitter" href="https://twitter.com/___mna___" title="@___mna___ on Twitter">
+							<span class="icon-twitter"></span>
+						</a>
+					</div>
+					<div class="clearfix"></div>
+				</hgroup>
+			</header>
+			<hr />
+			<nav>
+				<div class="container">
+					<div class="left quarter">
+						<span class="huge">•</span>
+					</div>
+					<div class="middle big half">
+						<span>Build a blog engine in Go</span>
+					</div>
+					<div class="right quarter">
+						<a class="huge" href="implementing-lua-coroutines-in-Go" title="Implementing Lua coroutines in Go">»</a>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</nav>
+			<hr />
+			<main>
+				<article lang="en"><h1>Build a Blog Engine in Go</h1>
+
+<p>I built a static blog generator in Go. It&rsquo;s called <a href="https://github.com/mna/trofaf">trofaf</a> because that&rsquo;s its name. Get this: it takes markdown files, reads some YAML front matter, and generates good ol&rsquo; HTML files. I can already smell the Nobel. Anyway, the goal of this post is not to brag about the novelty of the thing, but to show how easy it is to get this done with Go&rsquo;s rich standard library and some fine userland packages.</p>
+
+<h2>The Ties That Bind</h2>
+
+<p>Basically, the blog engine is glue code to bring together existing packages in a divine synergy that makes possible the very page you&rsquo;re reading, since this website is built and served by trofaf.</p>
+
+<p>If I was the kind of guy who believes in tl;dr, this is where I&rsquo;d post something like</p>
+
+<blockquote>
+<p>trofaf = <a href="http://tip.golang.org/pkg/net/http/">net/http</a> + <a href="https://github.com/russross/blackfriday">blackfriday</a> + <a href="https://github.com/jessevdk/go-flags">go-flags</a> + <a href="https://github.com/howeyc/fsnotify">fsnotify</a> + {<a href="https://github.com/eknkc/amber">amber</a> | <a href="http://tip.golang.org/pkg/html/template/">html/template</a>}</p>
+</blockquote>
+
+<p>and I&rsquo;d be pretty much spot on. But I won&rsquo;t do that, so let&rsquo;s dive.</p>
+
+<h2>From Markdown To Markup</h2>
+
+<p>How the package works is that it needs three subdirectories to exist in the current (working) directory, <code>posts</code>, <code>public</code> and <code>templates</code>. It takes markdown files from <code>posts</code>, runs them through the <code>templates</code>, and saves the output as static HTML files in <code>public</code>.</p>
+
+<p>Let&rsquo;s look at the data structures that are sent to the templates. This pretty much defines what can be displayed in a trofaf blog.</p>
+
+<pre><code class="language-go">// From tpldata.go
+
+// The ShortPost structure defines the basic metadata of a post.
+type ShortPost struct {
+	Slug string
+	Author string
+	Title string
+	Description string
+	Lang string
+	PubTime time.Time
+	ModTime time.Time
+}
+
+// The LongPost structure adds the parsed content of the post
+// to the embedded ShortPost information.
+type LongPost struct {
+	*ShortPost
+	Content template.HTML
+}
+
+// The TemplateData structure contains all the relevant information passed to the
+// template to generate the static HTML file.
+type TemplateData struct {
+	SiteName string
+	TagLine string
+	RssURL string
+	Post *LongPost
+	Recent []*LongPost
+	Prev *ShortPost
+	Next *ShortPost
+}
+</code></pre>
+
+<p>You get some website parameters (<code>SiteName</code>, <code>TagLine</code>, <code>RssURL</code>), the current post to display - along with its metadata, most of it coming from the YAML front matter -, a slice of recent posts (up to <code>Options.RecentPostsCount</code>, set using a command-line flag as we&rsquo;ll see later), and the previous and next post in reverse chronological order. The <code>template.HTML</code> type for the content means that this field can be safely rendered unescaped by the template; underneath it is a <code>string</code>.</p>
+
+<p>When the engine finds a post to render, it calls <code>newLongPost(fi os.FileInfo)</code>. This method is responsible for filling the <code>LongPost</code> structure, so it loads the file identified by the <code>os.FileInfo</code> interface and it starts looking for the front matter. This is very simple to parse:</p>
+
+<pre><code class="language-go">// From tpldata.go
+
+func newLongPost(fi os.FileInfo) (*LongPost, error) {
+	f, err := os.Open(filepath.Join(PostsDir, fi.Name()))
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	s := bufio.NewScanner(f)
+	m, err := readFrontMatter(s)
+	if err != nil {
+		return nil, err
+	}
+	// -truncated-
+}
+
+// The function returns a map of the key-value pairs found in the front matter.
+func readFrontMatter(s *bufio.Scanner) (map[string]string, error) {
+	m := make(map[string]string)
+	infm := false
+	for s.Scan() {
+		l := strings.Trim(s.Text(), &quot; &quot;)
+		if l == &quot;---&quot; { // The front matter is delimited by 3 dashes
+			if infm {
+				// This signals the end of the front matter
+				return m, nil
+			} else {
+				// This is the start of the front matter
+				infm = true
+			}
+		} else if infm {
+			sections := strings.SplitN(l, &quot;:&quot;, 2)
+			if len(sections) != 2 {
+				// Invalid front matter line
+				return nil, ErrInvalidFrontMatter
+			}
+			m[sections[0]] = strings.Trim(sections[1], &quot; &quot;)
+		} else if l != &quot;&quot; {
+			// No front matter, quit
+			return nil, ErrMissingFrontMatter
+		}
+	}
+	if err := s.Err(); err != nil {
+		// The scanner stopped because of an error
+		return nil, err
+	}
+	return nil, ErrEmptyPost
+}
+</code></pre>
+
+<p>The possibility of having invalid files (that is, <code>*.md</code> files that don&rsquo;t have valid front matter) is the reason why the <code>newLongPost</code> function returns two values, the created post and an error. In case of an error, the post file is simply ignored by the site generator.</p>
+
+<p>Once the front matter is validated and stored safely in a map, the post structure is created with a slug derived from the name of the file. To process the actual markdown, and turn it into HTML, the <a href="https://github.com/russross/blackfriday"><code>blackfriday</code></a> library is used. It is a great parser, but the API could be a little more Go-ish (like take an <code>io.Reader</code> instead of a slice of bytes, and support writing to an <code>io.Writer</code> instead of returning a slice of bytes). Still, it does what it does very well.</p>
+
+<p>But the file is already partly consumed, thanks to our <code>readFrontMatter</code> function, so how can we get the rest? My first attempt was to simply call <code>ioutil.ReadAll(f)</code> thinking (rightly so) that it would start loading from the current position, but it skipped valid parts of the file. This is obvious, in hindsight, since the <code>bufio.Scanner</code> used to read the front matter is buffered (you know, <strong>buf</strong>io), so more bytes were consumed than just the front matter. I ended up re-creating the rest of the file using this same <code>Scanner</code>, by calling <code>s.Scan()</code> until the EOF and appending back the newline character to each line.</p>
+
+<pre><code class="language-go">// From tpldata.go | newLongPost()
+
+// Read rest of file
+buf := bytes.NewBuffer(nil)
+for s.Scan() {
+	buf.WriteString(s.Text() + &quot;\n&quot;)
+}
+</code></pre>
+
+<p>With this slice of bytes containing all the markdown part of the file, and none of the YAML front matter, getting the HTML is simply a matter of calling <code>blackfriday.MarkdownCommon()</code>. This parses the markdown using a common set of options for the HTML renderer (various renderers can be implemented for blackfriday).</p>
+
+<h2>And Then There Was Light</h2>
+
+<p>Now that we&rsquo;re friends with the most important data structures of the blog engine, let&rsquo;s look at the site generator, which is essentially the <code>gen.go</code> file. The <code>generateSite()</code> function is responsible for driving the show, so let&rsquo;s break it down:</p>
+
+<pre><code class="language-go">// From gen.go
+
+// Generate the whole site.
+func generateSite() error {
+	// First compile the template(s)
+	if err := compileTemplates(); err != nil {
+		return err
+	}
+	// Now read the posts
+	fis, err := ioutil.ReadDir(PostsDir)
+	if err != nil {
+		return err
+	}
+	// Remove directories from the list, keep only .md files
+	fis = filter(fis)
+	// Get all posts.
+	all, recent := getPosts(fis)
+	// Delete current public directory files
+	if err := clearPublicDir(); err != nil {
+		return err
+	}
+	// Generate the static files
+	for i, p := range all {
+		td := newTemplateData(p, i, recent, all)
+		if err := generateFile(td, i == 0); err != nil {
+			return err
+		}
+	}
+	// Generate the RSS feed
+	td := newTemplateData(nil, 0, recent, nil)
+	return generateRss(td)
+}
+
+func getPosts(fis []os.FileInfo) (all, recent []*LongPost) {
+	all = make([]*LongPost, 0, len(fis))
+	for _, fi := range fis {
+		lp, err := newLongPost(fi)
+		if err == nil {
+			all = append(all, lp)
+		} else {
+			log.Printf(&quot;post ignored: %s; error: %s\n&quot;, fi.Name(), err)
+		}
+	}
+	// Then sort in reverse order (newer first)
+	sort.Sort(sort.Reverse(sortablePosts(all)))
+	cnt := Options.RecentPostsCount
+	if l := len(all); l &lt; cnt {
+		cnt = l
+	}
+	// Slice to get only recent posts
+	recent = all[:cnt]
+	return
+}
+
+func filter(fi []os.FileInfo) []os.FileInfo {
+	for i := 0; i &lt; len(fi); {
+		if fi[i].IsDir() || filepath.Ext(fi[i].Name()) != &quot;.md&quot; {
+			fi[i], fi = fi[len(fi)-1], fi[:len(fi)-1]
+		} else {
+			i++
+		}
+	}
+	return fi
+}
+</code></pre>
+
+<p>It starts by compiling the templates, and if this doesn&rsquo;t work, the generation stops there, leaving the previously generated site untouched. This gives the opportunity to fix the templates while the server is still serving pages (because as we&rsquo;ll see in a minute, there&rsquo;s a watcher involved and the site can be dynamically re-generated). trofaf supports both the Amber templates and the native Go templates, but that&rsquo;s a detail I&rsquo;ll skip for this blog post, you can check the <code>compileTemplates</code> function if you&rsquo;re curious.</p>
+
+<p>Next, it reads all files from the <code>posts</code> directory, and filters the results. The <code>filter()</code> function ignores directories and any file that doesn&rsquo;t have the <code>.md</code> extension. The clever slice manipulation is taken from the <a href="https://code.google.com/p/go-wiki/wiki/SliceTricks">slice tricks</a> wiki page. It removes an item from a slice without preserving the order, which is exaclty what I want at this point. It works by replacing the item to remove with the last item in the slice (<code>fi[i] = fi[len(fi)-1]</code>), and then reslicing by omitting the last element (which is still present because it replaced the item to remove - unless, of course, the item to remove was the last item, in which case it still works and the first assignment is essentially a no-op).</p>
+
+<p>Back to the <code>generateSite()</code> function, it then loads all posts into their data structure, ignoring invalid posts (we&rsquo;ve already seen how this worked). The next interesting bit is the custom sort, based on the published date. This is done by implementing the stdlib&rsquo;s <code>sort.Interface</code>:</p>
+
+<pre><code class="language-go">// From gen.go
+
+type sortablePosts []*LongPost
+func (s sortablePosts) Len() int { return len(s) }
+func (s sortablePosts) Less(i, j int) bool { return s[i].PubTime.Before(s[j].PubTime) }
+func (s sortablePosts) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+</code></pre>
+
+<p>As seen in <code>getPosts()</code>, the <code>sort.Reverse()</code> call is used to sort with the latest posts first. This function returns a valid <code>sort.Interface</code> implementation that can be passed to <code>sort.Sort()</code>, and is simply the opposite of the provided interface. <code>getPosts()</code> also slices the <code>all</code> slice of posts to represent only the recent posts, up to the number specified on the command-line.</p>
+
+<p>The <code>clearPublicDir()</code> doesn&rsquo;t provide much surprises, it removes existing files to make way for the new ones (since posts can be deleted, they must disappear from the static site). The only thing to mention is that subdirectories are left untouched, so that <code>css/</code>, <code>js/</code>, <code>img/</code> or whatever other useful asset can be safely kept from harm. Some other special files directly under <code>public/</code> are also ignored, such as <code>robots.txt</code>, <code>favicon.ico</code> and such.</p>
+
+<p>Finally, the static HTML file is generated by creating the <code>TemplateData</code> structure and running it through the template, saving the result. Since this is a minimalist blog engine that favors simplicity over features, there&rsquo;s a special case for the index page (the page that gets served when the root path is requested). It is the most recent blog post. So this post is saved twice, once under its own name, and once under <code>index.html</code>, using an <code>io.MultiWriter</code>. There&rsquo;s also an RSS generated using the recent posts slice and a slightly adapted and embedded version of the RSS generator in <a href="https://github.com/krautchan/gbt">gbt</a>.</p>
+
+<h2>File-Level PRISM</h2>
+
+<p>One nice thing with trofaf is that it watches. Oh yes, it stares and spies and takes care of business. Using the great <a href="https://github.com/howeyc/fsnotify">fsnotify</a> package (that is - <a href="https://code.google.com/p/go/issues/detail?id=4068">from what I understand</a> - in the process of being included in the stdlib), the <code>posts</code> and <code>templates</code> directories are under surveillance and any change to a <code>posts/*.md</code> file, <code>templates/*.amber</code> or <code>templates/*.html</code> triggers a regeneration of the site. Because multiple events can be triggered in close succession when a file changes, there is a delay (10 seconds at the moment) after the last event received before the generation is actually executed. The watch function looks like this:</p>
+
+<pre><code class="language-go">// From watch.go
+
+func watch(w *fsnotify.Watcher) {
+	var delay &lt;-chan time.Time
+	for {
+		select {
+		case ev := &lt;-w.Event:
+			// Regenerate the files after the delay, reset the delay if an event is triggered
+			// in the meantime
+			ext := filepath.Ext(ev.Name)
+			// Care only about changes to markdown files in the Posts directory, or to
+			// Amber or Native Go template files in the Templates directory.
+			if strings.HasPrefix(ev.Name, PostsDir) &amp;&amp; ext == &quot;.md&quot; {
+				delay = time.After(watchEventDelay)
+			} else if strings.HasPrefix(ev.Name, TemplatesDir) &amp;&amp; (ext == &quot;.amber&quot; || ext == &quot;.html&quot;) {
+				delay = time.After(watchEventDelay)
+			}
+
+		case err := &lt;-w.Error:
+			log.Println(&quot;WATCH ERROR &quot;, err)
+
+		case &lt;-delay:
+			if err := generateSite(); err != nil {
+				log.Println(&quot;ERROR generating site: &quot;, err)
+			} else {
+				log.Println(&quot;site generated&quot;)
+			}
+		}
+	}
+}
+</code></pre>
+
+<h2>Gotta Serve Somebody</h2>
+
+<p>Somewhere in there there must be a web server, right? Right. This might be the simplest part of the blog engine. Here it is in all its glory:</p>
+
+<pre><code class="language-go">// From server.go
+
+// Start serving the blog.
+func run() {
+	h := handlers.FaviconHandler(
+		handlers.PanicHandler(
+			handlers.LogHandler(
+				handlers.GZIPHandler(
+					http.FileServer(http.Dir(PublicDir)),
+					nil),
+				handlers.NewLogOptions(nil, handlers.Lshort)),
+			nil),
+		faviconPath,
+		faviconCache)
+
+	// Assign the combined handler to the server.
+	http.Handle(&quot;/&quot;, h)
+
+	// Start it up.
+	log.Printf(&quot;trofaf server listening on port %d&quot;, Options.Port)
+	if err := http.ListenAndServe(fmt.Sprintf(&quot;:%d&quot;, Options.Port), nil); err != nil {
+		log.Fatal(&quot;FATAL &quot;, err)
+	}
+}
+</code></pre>
+
+<p>At its heart is the <a href="http://tip.golang.org/pkg/net/http/#FileServer">stdlib&rsquo;s <code>http.FileServer()</code> function</a>, that serves static files. Out-of-the-box, it does pretty much all that is needed, including serving an <code>index.html</code> file if it exists (otherwise it just renders the content of the directory). The rest is from my <a href="https://github.com/mna/ghost">ghost</a> package and it&rsquo;s there just to spice things up a little, like supporting gzip encoding, serving a status code 500 on panics, logging the requests&rsquo; data and caching the favicon.</p>
+
+<h2>Wherever This Flag&rsquo;s Flown</h2>
+
+<p>And then there&rsquo;s the main function, and the flag library to handle the command-line options. I decided to go with <a href="https://github.com/jessevdk/go-flags">go-flags</a> instead of the stdlib&rsquo;s flag package, because it provides a nice and clean way to define the options in a structure, and makes use of the field tag to configure each parameter. It&rsquo;s also closer to the GNU getopt implementation (at least for the short and long flags), although I&rsquo;m not sure if it is fully compliant.</p>
+
+<p>The <code>options</code> structure looks like this:</p>
+
+<pre><code class="language-go">// From main.go
+
+type options struct {
+	Port             int    `short:&quot;p&quot; long:&quot;port&quot; description:&quot;the port to use for the web server&quot; default:&quot;9000&quot;`
+	NoGen            bool   `short:&quot;G&quot; long:&quot;no-generation&quot; description:&quot;when set, the site is not automatically generated&quot;`
+	SiteName         string `short:&quot;n&quot; long:&quot;site-name&quot; description:&quot;the name of the site&quot; default:&quot;Site Name&quot;`
+	TagLine          string `short:&quot;t&quot; long:&quot;tag-line&quot; description:&quot;the site's tag line&quot;`
+	RecentPostsCount int    `short:&quot;r&quot; long:&quot;recent-posts&quot; description:&quot;the number of recent posts to send to the templates&quot; default:&quot;5&quot;`
+	BaseURL          string `short:&quot;b&quot; long:&quot;base-url&quot; description:&quot;the base URL of the web site&quot; default:&quot;http://localhost&quot;`
+}
+</code></pre>
+
+<h2>Blog Away</h2>
+
+<p>That&rsquo;s all there is to it! I&rsquo;ve skipped over some implementation details, but the essential parts have been covered. You end up with a static blog generator that parses markdown and YAML front matter, that watches for changes and generates an up-to-date website on the fly, and serves it efficiently to the whole world. Use it as-is if you like things simple and minimal, or <a href="https://github.com/mna/trofaf">fork and enhance</a> as you see fit!</p>
+</article>
+				<p class="meta">
+					<time datetime="2013-07-22">published 2013-07-22</time>
+					<time datetime="2017-06-10">and last updated 2017-06-10</time>
+				</p>
+			</main>
+			<hr />
+			<footer>
+				<ul class="container middle">
+					<li>
+						<time datetime="2016-03-02">2016-03-02</time>
+						<a href="about-Go-logging">About Go logging for reusable packages</a>
+					</li>
+					<li>
+						<time datetime="2016-02-16">2016-02-16</time>
+						<a href="Let-the-Doer-Do-it">Let the Doer Do it</a>
+					</li>
+					<li>
+						<time datetime="2015-04-13">2015-04-13</time>
+						<a href="A-PEG-parser-generator-for-Go">A PEG parser generator for Go</a>
+					</li>
+					<li>
+						<time datetime="2014-06-16">2014-06-16</time>
+						<a href="Dealing-with-binary-files-and-uglified-json-in-Vim">Dealing with binary files and uglified JSON in Vim</a>
+					</li>
+					<li>
+						<time datetime="2014-02-19">2014-02-19</time>
+						<a href="throttled--guardian-of-the-web-server">Throttled: Guardian Of The Web Server</a>
+					</li>
+				</ul>
+				<div class="container middle">
+					<small>
+						2013-2017 Martin Angers
+						<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.en_US">CC BY-SA 3.0</a>
+						, built with
+						<a href="https://github.com/mna/trofaf">trofaf</a>
+					</small>
+				</div>
+			</footer>
+		</div>
+		<script>
+			if (document.querySelectorAll && "classList" in document.documentElement) {
+				codes = document.querySelectorAll("pre code");
+				for (var i = 0; i < codes.length; ++i) {
+					codes[i].classList.add("prettyprint", "lang-go");
+				}
+				el = document.createElement("script");
+				sc = document.getElementsByTagName("script")[0];
+				el.async = 1;
+				el.src = "https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js";
+				sc.parentNode.insertBefore(el, sc);
+			}
+		</script>
+		<script>
+			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+			ga('create', 'UA-42479727-1', '0value.com');
+			ga('send', 'pageview');
+		</script>
+	</body>
+</html>

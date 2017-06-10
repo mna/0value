@@ -1,0 +1,210 @@
+<!DOCTYPE html><!-- From HTML5 Boilerplate -->
+<html class="no-js" lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>My (Go-centric) Vim Setup</title>
+		<meta name="description" content="This is the result of quite a few googling safaris, and hopefully it can prove helpful to others wanting to write (especially Go) code in Vim. I&#39;m sure this is just scratching the surface of what can (let alone should!) be done, and text editing being the subjective beast that it is, YMMV, but here goes, without further ado, I present to you my glorious Vim setup!" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link href="/css/main.css" rel="stylesheet" />
+		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
+	</head>
+	<body>
+		<div class="content">
+			
+			<header>
+				<hgroup>
+					<div class="left title">
+						<h1>
+							<a href="/">ø value</a>
+						</h1>
+						<h2>a wysiwyg hypertext cyberblog</h2>
+					</div>
+					<div class="right social">
+						<a class="huge github" href="https://github.com/mna" title="@mna on GitHub">
+							<span class="icon-github-circled"></span>
+						</a>
+						<a class="huge twitter" href="https://twitter.com/___mna___" title="@___mna___ on Twitter">
+							<span class="icon-twitter"></span>
+						</a>
+					</div>
+					<div class="clearfix"></div>
+				</hgroup>
+			</header>
+			<hr />
+			<nav>
+				<div class="container">
+					<div class="left quarter">
+						<a class="huge" href="implementing-lua-coroutines-in-Go" title="Implementing Lua coroutines in Go">«</a>
+					</div>
+					<div class="middle big half">
+						<span>My (Go-centric) Vim Setup</span>
+					</div>
+					<div class="right quarter">
+						<a class="huge" href="introducing-agora--a-dynamic--embeddable-programming-language-built-with-Go" title="Introducing agora: a dynamic, embeddable programming language built with Go">»</a>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</nav>
+			<hr />
+			<main>
+				<article lang="en"><h1>My (Go-centric) Vim Setup</h1>
+
+<p>A while ago I was all about <a href="http://www.sublimetext.com/">Sublime Text 2</a>. Text editing was a solved thing. I bought my license, installed <a href="http://wbond.net/sublime_packages/package_control"><code>Package Control</code></a> and never looked back. Bliss. Then came the beta version of Sublime Text 3, which was equally awesome (it broke a few things early on for Package Control, <a href="https://sublime.wbond.net/news#2013-08-09-Package_Control_2">looks fine now</a>, but I felt it was no big deal for a beta). I was still happily using ST2 for my day-to-day, but the question of buying a new license about a year after ST2 made me question my next move.</p>
+
+<p>Don&rsquo;t get me wrong: ST2 (and presumably ST3, I haven&rsquo;t closely followed its evolution) is a wonderful text editor, worth every penny of the ±60$ that I sent to a fellow programmer (I see it&rsquo;s now 70$, still worth it IMO). It&rsquo;s even <em>cheap</em> by today&rsquo;s monthly subscription-based SaaS standard (5$/month, if you do the math). It&rsquo;s just that, faced with a decision, I decided to keep an open mind and look at alternatives, especially knowing that free behemoths - in every sense of <em>free</em> and <em>behemoths</em>, namely <code>emacs</code> and <code>vim</code> - were touted by many respected knights of the curly braces. Long story short, I dove into emacs&rsquo; <a href="https://www.gnu.org/software/emacs/manual/emacs.html">daunting manual</a>, came back impressed by the kill ring but never really clicked on a metaphysical level, while armed with a Vim cheat sheet, <a href="http://yanpritzker.com/2011/12/16/learn-to-speak-vim-verbs-nouns-and-modifiers/">Yan Pritzker&rsquo;s post</a> and an indomitable will, I found my home with Vim.</p>
+
+<p>The next step was to make it truly mine. This is the result of quite a few googling safaris, and hopefully it can prove helpful to others wanting to write (especially Go) code in Vim. I&rsquo;m sure this is just scratching the surface of what can (let alone <em>should</em>!) be done, and text editing being the subjective beast that it is, YMMV, but here goes, without further ado, I present to you my glorious Vim setup!</p>
+
+<ol>
+<li><p><strong>Go&rsquo;s official Vim plugins</strong> : the Go team provides a nice collection of Vim plugins <a href="http://tip.golang.org/misc/vim/readme.txt">as part of Go&rsquo;s release tarball</a>. These will get you sytax highlighting, <code>:Godoc</code> support, automatic indentation, <code>:Import</code> and <code>:Drop</code> commands to add/remove import paths, etc. To be honest, I prefer to use <a href="http://code.google.com/p/rspace.cmd/doc">Rob Pike&rsquo;s handy <code>doc</code> command</a> instead of <code>Godoc</code> to look for quick documentation (using <code>!doc &lt;something&gt;</code> from the Vim command).</p></li>
+
+<li><p><strong>NERD Tree</strong> : <a href="https://github.com/scrooloose/nerdtree">this plugin</a> brings a useful hierarchical file and directory explorer sidebar, along with many file manipulation actions (create, move, delete, etc.). Since I start vim (usually <code>MacVim</code> in my case) from the command line, from the directory at the root of my project, my NERD Tree is automatically scoped to display this directory and its children.</p>
+
+<p>And because I almost always navigate files inside Vim using this plugin, I set it to open automatically at startup with <code>au VimEnter * NERDTreeToggle</code> in my <code>.vimrc</code> file, and I map the NERD Tree toggle key to <code>F3</code> for easy access (<code>nmap &lt;F3&gt; :NERDTreeToggle&lt;CR&gt;</code>).</p>
+
+<p><img src="/img/nerdtree.jpg" alt="NERD Tree Preview" /></p></li>
+
+<li><p><strong>Gocode</strong> : <a href="https://github.com/nsf/gocode">Gocode</a> is a daemon that provides context-sensitive Go language auto-completion to text editors. It is a generic tool depended upon by many text editors (including Sublime Text with <code>GoSublime</code>), and naturally it supports Vim and emacs. Follow the instructions on Github to install and setup with Vim.</p></li>
+
+<li><p><strong>gofmt on save</strong> : if you write Go code, you absolutely should use <code>gofmt</code> to format your code to the canonical style. Using <a href="http://stackoverflow.com/a/10969574/1094941">a simple configuration</a> in my <code>.vimrc</code> file, my files get formatted automatically on save: <code>au FileType go au BufWritePre &lt;buffer&gt; Fmt</code>. Alternatively, <a href="https://github.com/bradfitz/goimports">Brad Fitzpatrick&rsquo;s <code>goimports</code> tool</a> may be used instead. It takes care of unused/missing import statements as well as formatting.</p></li>
+
+<li><p><strong>ctags to jump to declaration</strong> : using <code>&lt;ctrl&gt;+]</code> makes it possible to jump to the declaration of the token under the cursor. This can be pretty useful, and requires the <a href="http://blog.stwrt.ca/2012/10/31/vim-ctags">installation of <code>ctags</code></a> in order to work properly. This creates a <code>tags</code> file with information for Vim on where tokens are declared. Using this configuration line in <code>.vimrc</code>, <a href="http://stackoverflow.com/questions/155449/vim-auto-generate-ctags">I can regenerate the <code>tags</code> file automatically when saving Go source files</a>, so that it is always up to date: <code>au BufWritePost *.go silent! !ctags -R &amp;</code>.</p>
+
+<p>There&rsquo;s a <a href="https://github.com/jstemmer/gotags">special package <code>gotags</code></a> that provides Go language support to ctags. See its readme on GitHub for instructions on how to set it up with tagbar, which is the next bullet&hellip;</p></li>
+
+<li><p><strong>Type explorer</strong> : the <a href="http://majutsushi.github.io/tagbar/">tagbar plugin</a> provides another sidebar, similar to NERD Tree, with IDE-like type explorer of the current file. The plugin requires the use of ctags. I don&rsquo;t use it much as I tend to keep my files small, but I still keep it around, mostly for when I navigate other people&rsquo;s code. I mapped the <code>F4</code> key to its toggle command: <code>nmap &lt;F4&gt; :TagbarToggle&lt;CR&gt;</code>.</p>
+
+<p><img src="/img/tagbar.jpg" alt="Tagbar Preview" /></p></li>
+
+<li><p><strong>SuperTab completion</strong> : blame it on too many years of heavyweight IDEs, but I like some automatic code completion. <code>&lt;Ctrl-x&gt;&lt;Ctrl-o&gt;</code> won&rsquo;t cut it. So I use the <a href="https://github.com/ervandew/supertab">SuperTab completion plugin</a>, that triggers the autocompletion action when the <code>&lt;tab&gt;</code> key is pressed in insert mode next to some token. By setting <code>let g:SuperTabDefaultCompletionType = &quot;context&quot;</code> in my <code>.vimrc</code>, it knows when to trigger <code>gocode</code> or simple text completion, based on current context.</p></li>
+
+<li><p><strong>autoclose braces</strong> : using the <a href="https://github.com/Townk/vim-autoclose">smart AutoClose plugin</a>, the usual pairs of tokens like parentheses, curly braces, brackets, quotes and such are generated automatically, and handled rather intelligently, so that typing the closing token doesn&rsquo;t add an unnecessary character (it simply types over the existing one). I can imagine some people absolutely <em>loathe</em> this feature, though.</p></li>
+
+<li><p><strong>kill ring, the Vim way</strong> : I already talked about the great emacs feature, well of course there&rsquo;s a Vim plugin for that! There&rsquo;s many, actually, and I use <a href="https://github.com/maxbrunsfeld/vim-yankstack">YankStack</a>. Using <code>&lt;meta&gt;-p</code> after a paste, I can rewind through the history of yanks (cut/copies), and <code>&lt;meta&gt;-P</code> travels the other way. The only downside that I&rsquo;ve found is that it seems to interfere with the Vim-way to paste from the system clipboard (<code>&quot;*p</code>), so I have to use the OS-specific <code>&lt;cmd&gt;-v</code> instead.</p></li>
+
+<li><p><strong>md is for markdown</strong> : I often write markdown files (like, right now) and I use the shorter <code>.md</code> extension instead of the <code>.markdown</code> one. To make Vim recognize this content as markdown, I add the line <code>au BufRead,BufNewFile *.md set filetype=markdown</code> to my <code>.vimrc</code>.</p></li>
+</ol>
+
+<p>The rest of the list is for rarely used stuff that, for some reason, I&rsquo;ve kept around in my configuration. It may not survive the next spring cleaning.</p>
+
+<ol>
+<li><p><strong>build from Vim</strong> : I usually switch to my terminal window when I want to build, test or commit my work. But I still have the <code>F5</code> key mapped to <a href="http://stackoverflow.com/questions/11041462/vim-makeprg-and-errorformat-for-go">compile Go code and open the results pane</a>:</p>
+
+<pre><code>au Filetype go set makeprg=go\ build\ ./...
+nmap &lt;F5&gt; :make&lt;CR&gt;:copen&lt;CR&gt;
+</code></pre></li>
+
+<li><p><strong>Vet and Lint</strong> : similarly, <code>go vet</code> and <code>golint</code> are simple enough to call from the terminal with a quick switch, or even from Vim using the bang notation (<code>!go vet %</code>) in command mode, but still, I have a custom Vim command set up for them:</p>
+
+<pre><code>function! s:GoVet()
+    cexpr system(&quot;go vet &quot; . shellescape(expand('%')))
+    copen
+endfunction
+command! GoVet :call s:GoVet()
+
+
+function! s:GoLint()
+    cexpr system(&quot;golint &quot; . shellescape(expand('%')))
+    copen
+endfunction
+command! GoLint :call s:GoLint()
+</code></pre></li>
+
+<li><p><strong>folding</strong> : I have setup my fold method to <code>syntax</code> so that folds (code hiding, or <em>regions</em> as they are called in Visual Studio, I believe) are automatically available for all functions in Go files. This is pretty much a work-in-progress configuration <a href="http://www.miek.nl/blog/archives/2011/08/12/vim_setup/index.html">based on this article</a>, as I try to find what works best for me.</p>
+
+<pre><code>set foldmethod=syntax
+set foldnestmax=10
+set nofoldenable
+set foldlevel=0
+</code></pre></li>
+</ol>
+
+<p>The rest of my setup is just setting some Vim options to my liking:</p>
+
+<pre><code>set macmeta	&quot; Allow use of Option key as meta key (for M-x bindings)
+set guifont=Source\ Code\ Pro:h16 &quot; Set default font
+set ts=2 &quot; Set tabs to 2 spaces
+colorscheme zenburn	&quot; Set default color scheme
+set nu &quot; Default to line numbers on
+set incsearch	&quot; Set incremental search on
+set fu &quot; Start fullscreen
+</code></pre>
+
+<p>Note that this is my setup on my Macbook Pro, where I always use the graphical Vim (MacVim). My <code>.vimrc</code> file would no doubt need some checks and tweaks to work correctly in terminal mode or cross-platform.</p>
+
+<h2>Recommendations from readers (added 2013-08-17)</h2>
+
+<p>Many among you suggested various plugins following the initial post. Here they are:</p>
+
+<ul>
+<li><p><strong>godef</strong> : based on Roger Peppe&rsquo;s <code>godef</code> tool, <a href="https://github.com/dgryski/vim-godef">this vim plugin</a> overrides the <code>gd</code> (goto definition) command with a spiced-up version that looks inside all packages, even Go&rsquo;s source files. It replaced my ctags-based <code>&lt;ctrl&gt;+]</code> command.</p></li>
+
+<li><p><strong>syntastic</strong> : <a href="https://github.com/scrooloose/syntastic">this plugin</a> was recommended many times, and I can see why. I haven&rsquo;t used it a lot yet, but it gives syntax checks and error reporting on-the-fly when the file is saved, unobtrusively, without the need to compile the source file. It supports Go out-of-the-box.</p></li>
+
+<li><p><strong>snippets</strong> : <a href="https://github.com/garbas/vim-snipmate/">vim-snipmate</a> brings Textmate/Sublime Text snippets support to Vim. I haven&rsquo;t tried it yet, as I wasn&rsquo;t using them even with ST2, but for people used to this, it&rsquo;s right there for you!</p></li>
+</ul>
+</article>
+				<p class="meta">
+					<time datetime="2013-08-15">published 2013-08-15</time>
+					<time datetime="2017-06-10">and last updated 2017-06-10</time>
+				</p>
+			</main>
+			<hr />
+			<footer>
+				<ul class="container middle">
+					<li>
+						<time datetime="2016-03-02">2016-03-02</time>
+						<a href="about-Go-logging">About Go logging for reusable packages</a>
+					</li>
+					<li>
+						<time datetime="2016-02-16">2016-02-16</time>
+						<a href="Let-the-Doer-Do-it">Let the Doer Do it</a>
+					</li>
+					<li>
+						<time datetime="2015-04-13">2015-04-13</time>
+						<a href="A-PEG-parser-generator-for-Go">A PEG parser generator for Go</a>
+					</li>
+					<li>
+						<time datetime="2014-06-16">2014-06-16</time>
+						<a href="Dealing-with-binary-files-and-uglified-json-in-Vim">Dealing with binary files and uglified JSON in Vim</a>
+					</li>
+					<li>
+						<time datetime="2014-02-19">2014-02-19</time>
+						<a href="throttled--guardian-of-the-web-server">Throttled: Guardian Of The Web Server</a>
+					</li>
+				</ul>
+				<div class="container middle">
+					<small>
+						2013-2017 Martin Angers
+						<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.en_US">CC BY-SA 3.0</a>
+						, built with
+						<a href="https://github.com/mna/trofaf">trofaf</a>
+					</small>
+				</div>
+			</footer>
+		</div>
+		<script>
+			if (document.querySelectorAll && "classList" in document.documentElement) {
+				codes = document.querySelectorAll("pre code");
+				for (var i = 0; i < codes.length; ++i) {
+					codes[i].classList.add("prettyprint", "lang-go");
+				}
+				el = document.createElement("script");
+				sc = document.getElementsByTagName("script")[0];
+				el.async = 1;
+				el.src = "https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js";
+				sc.parentNode.insertBefore(el, sc);
+			}
+		</script>
+		<script>
+			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+			ga('create', 'UA-42479727-1', '0value.com');
+			ga('send', 'pageview');
+		</script>
+	</body>
+</html>

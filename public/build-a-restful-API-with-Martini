@@ -1,0 +1,392 @@
+<!DOCTYPE html><!-- From HTML5 Boilerplate -->
+<html class="no-js" lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>Build a RESTful API with Martini</title>
+		<meta name="description" content="I&#39;ve been looking for an excuse to try Martini ever since it was announced on the golang-nuts mailing list. Martini is a Go package for web server development that skyrocketed to close to 2000 stars on GitHub in just a few weeks (the first public commit is a month old). So I decided to build an example application that implements a (pragmatic) RESTful API, based on mostly-agreed-upon best practices." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link href="/css/main.css" rel="stylesheet" />
+		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
+	</head>
+	<body>
+		<div class="content">
+			
+			<header>
+				<hgroup>
+					<div class="left title">
+						<h1>
+							<a href="/">ø value</a>
+						</h1>
+						<h2>a wysiwyg hypertext cyberblog</h2>
+					</div>
+					<div class="right social">
+						<a class="huge github" href="https://github.com/mna" title="@mna on GitHub">
+							<span class="icon-github-circled"></span>
+						</a>
+						<a class="huge twitter" href="https://twitter.com/___mna___" title="@___mna___ on Twitter">
+							<span class="icon-twitter"></span>
+						</a>
+					</div>
+					<div class="clearfix"></div>
+				</hgroup>
+			</header>
+			<hr />
+			<nav>
+				<div class="container">
+					<div class="left quarter">
+						<a class="huge" href="agora-v0-2--closures--coroutines-and-for--range" title="Agora v0.2: Closures, Coroutines and For-Range">«</a>
+					</div>
+					<div class="middle big half">
+						<span>Build a RESTful API with Martini</span>
+					</div>
+					<div class="right quarter">
+						<a class="huge" href="throttled--guardian-of-the-web-server" title="Throttled: Guardian Of The Web Server">»</a>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</nav>
+			<hr />
+			<main>
+				<article lang="en"><h1>Build a RESTful API with Martini</h1>
+
+<p>I&rsquo;ve been looking for an excuse to try <a href="http://martini.codegangsta.io">Martini</a> ever since it was announced on the golang-nuts mailing list. Martini is a Go package for web server development that skyrocketed to close to 2000 stars on GitHub in just a few weeks (the first public commit is a month old). So I decided to build an example application that implements a (pragmatic) RESTful API, based on <a href="http://www.vinaysahni.com/best-practices-for-a-pragmatic-restful-api">mostly-agreed-upon best practices</a>. The companion code for this article <a href="https://github.com/mna/martini-api-example">can be found on GitHub</a>.</p>
+
+<h2>Why Martini?</h2>
+
+<p>Martini has many things going for it, chief among them is the very elegant API using only a thin layer of abstraction over the stdlib&rsquo;s excellent <code>net/http</code> package, and the fact that it understands <a href="http://golang.org/pkg/net/http/#Handler">the ubiquitous <code>http.Handler</code> interface</a>.</p>
+
+<p>Another key point is that if Martini ever feels magical to you (me no like magic), you absolutely should peek at the code. It is a very slim and manageable ~400 lines of code (it was this morning anyway), with a single external dependency, the <a href="https://github.com/codegangsta/inject">inject</a> package, another skinny ~100 lines of code.</p>
+
+<p>Please note that it is currently under active development, and some examples may be broken due to recent changes. I&rsquo;ll try to keep my source code repository up-to-date.</p>
+
+<h2>Use cases</h2>
+
+<p>The example application will expose a single resource, music albums, under the <code>/albums</code> URI. It will support:</p>
+
+<ul>
+<li><code>GET /albums</code> : list all available albums, with optional filtering based on band, title or year using query string parameters</li>
+<li><code>GET /albums/:id</code> : fetch a specific album</li>
+<li><code>POST /albums</code> : create an album</li>
+<li><code>PUT /albums/:id</code> : update an album</li>
+<li><code>DELETE /albums/:id</code> : delete an album.</li>
+</ul>
+
+<p>To make things interesting, responses can be requested in JSON, XML or plain text. Response format will be determined based on the endpoint&rsquo;s extension (<code>.json</code>, <code>.xml</code> or <code>.text</code>, defaulting to JSON).</p>
+
+<p>Because the data store is not the goal of the app, a (read-write) mutex-controlled map is used as in-memory &ldquo;database&rdquo;, and it implements an interface that defines the required actions:</p>
+
+<pre><code>type DB interface {
+	Get(id int) *Album
+	GetAll() []*Album
+	Find(band, title string, year int) []*Album
+	Add(a *Album) (int, error)
+	Update(a *Album) error
+	Delete(id int)
+}
+</code></pre>
+
+<p>The album data structure is defined like this:</p>
+
+<pre><code>type Album struct {
+	XMLName xml.Name `json:&quot;-&quot; xml:&quot;album&quot;`
+	Id      int      `json:&quot;id&quot; xml:&quot;id,attr&quot;`
+	Band    string   `json:&quot;band&quot; xml:&quot;band&quot;`
+	Title   string   `json:&quot;title&quot; xml:&quot;title&quot;`
+	Year    int      `json:&quot;year&quot; xml:&quot;year&quot;`
+}
+
+func (a *Album) String() string {
+	return fmt.Sprintf(&quot;%s - %s (%d)&quot;, a.Band, a.Title, a.Year)
+}
+</code></pre>
+
+<p>The field tags control the marshaling of the structure to JSON and XML. The <code>XMLName</code> field gives the structure its element name in XML, and is ignored in JSON. The <code>Id</code> field is set as an attribute in XML. The other tags simply give a lower-cased name to the serialized fields. The plain text format will use the <code>fmt.Stringer</code> interface - that is, the <code>func String() string</code> function.</p>
+
+<p>With this out of the way, let&rsquo;s see how Martini is actually used.</p>
+
+<h2>DRY Martini</h2>
+
+<p>At the heart of the martini package is the <code>martini.Martini</code> type, which implements the <code>http.Handler</code> interface, so that it can be passed to <code>http.ListenAndServe()</code> like any stdlib handler. Another important notion is that martini uses a middleware-based approach - meaning that you can configure a list of functions to be called in a specific order before the actual route handler is executed. This is very useful to setup things like logging, authentication, session management, etc., and it helps keep things <a href="http://en.wikipedia.org/wiki/Don't_repeat_yourself">DRY</a>.</p>
+
+<p>The package provides the <code>martini.Classic()</code> function that creates an instance with sane defaults - common middleware like panic recovery, logging and static file support. This is great for a web site, but for an API, we don&rsquo;t care much about serving static pages, so we won&rsquo;t use the Classic Martini.</p>
+
+<p>Thankfully this is just a convenience function, it is always possible to create a bare Martini instance and configure it manually as needed. Our version looks like this:</p>
+
+<pre><code>var m *martini.Martini
+
+func init() {
+	m = martini.New()
+
+	// Setup middleware
+	m.Use(martini.Recovery())
+	m.Use(martini.Logger())
+	m.Use(auth.Basic(AuthToken, &quot;&quot;))
+	m.Use(MapEncoder)
+
+	// Setup routes
+	r := martini.NewRouter()
+	r.Get(`/albums`, GetAlbums)
+	r.Get(`/albums/:id`, GetAlbum)
+	r.Post(`/albums`, AddAlbum)
+	r.Put(`/albums/:id`, UpdateAlbum)
+	r.Delete(`/albums/:id`, DeleteAlbum)
+
+	// Inject database
+	m.MapTo(db, (*DB)(nil))
+
+	// Add the router action
+	m.Action(r.Handle)
+}
+</code></pre>
+
+<p>The panic recovery and logger middleware are fairly obvious. <code>auth.Basic()</code> is a handler provided by the userland add-ons repository <a href="https://github.com/codegangsta/martini-contrib">martini-contrib</a>, and it is a little bit too naive for an API, since we can only feed it a single username-password, and all requests are checked against this tuple. In a more realistic scenario, we would need to support any number of valid access tokens, so this basic auth handler wouldn&rsquo;t fit.</p>
+
+<p>Let&rsquo;s skip over the <code>MapEncoder</code> middleware for now, we&rsquo;ll come back to it in a minute. The next step is to setup the routes, and martini provides a nice clean way to do this. It supports placeholders for parameters, and you can even throw some regular expressions in there, that&rsquo;s how the path will end up anyway. The second parameter to the <code>Get, Post, Put</code> and co. is the handler to call for this route. Many handlers can be passed on the same route definition (this is a variadic parameter), and they will be executed in order, until one of them writes a response.</p>
+
+<p>Then we define a global dependency. This is a very neat feature of martini (wait, or is it <a href="https://twitter.com/enneff/status/405603366568329216"><em>icky</em></a> ? :-), it supports global- and request-scoped dependencies, and when it encounters a handler (middleware function or route handler) that asks for a parameter of that type, the dependency injector will feed it the right value. In this case, <code>m.MapTo()</code> maps the <code>db</code> package variable (the instance of our in-memory database) to the <code>DB</code> interface that we defined earlier. This particular case doesn&rsquo;t get much added value versus using the thread-safe, package-global <code>db</code> variable directly, but in other cases (like the encoder, see below) it can prove very useful.</p>
+
+<p>The syntax for the second parameter may seem weird, it is just converting <code>nil</code> to the pointer-to-DB-interface type, because all the injector needs is the type to map the first parameter to.</p>
+
+<p>The final step, <code>m.Action()</code>, adds the router&rsquo;s configuration to the list of handlers that Martini will call.</p>
+
+<h2>The MapEncoder middleware</h2>
+
+<p>Back to the <code>MapEncoder</code> middleware function, it sets the <code>Encoder</code> interface dependency for the current request based on the requested encoding format:</p>
+
+<pre><code>// An Encoder implements an encoding format of values to be sent as response to
+// requests on the API endpoints.
+type Encoder interface {
+	Encode(v ...interface{}) (string, error)
+}
+
+// The regex to check for the requested format (allows an optional trailing
+// slash).
+var rxExt = regexp.MustCompile(`(\.(?:xml|text|json))\/?$`)
+
+// MapEncoder intercepts the request's URL, detects the requested format,
+// and injects the correct encoder dependency for this request. It rewrites
+// the URL to remove the format extension, so that routes can be defined
+// without it.
+func MapEncoder(c martini.Context, w http.ResponseWriter, r *http.Request) {
+	// Get the format extension
+	matches := rxExt.FindStringSubmatch(r.URL.Path)
+	ft := &quot;.json&quot;
+	if len(matches) &gt; 1 {
+		// Rewrite the URL without the format extension
+		l := len(r.URL.Path) - len(matches[1])
+		if strings.HasSuffix(r.URL.Path, &quot;/&quot;) {
+			l--
+		}
+		r.URL.Path = r.URL.Path[:l]
+		ft = matches[1]
+	}
+	// Inject the requested encoder
+	switch ft {
+	case &quot;.xml&quot;:
+		c.MapTo(xmlEncoder{}, (*Encoder)(nil))
+		w.Header().Set(&quot;Content-Type&quot;, &quot;application/xml&quot;)
+	case &quot;.text&quot;:
+		c.MapTo(textEncoder{}, (*Encoder)(nil))
+		w.Header().Set(&quot;Content-Type&quot;, &quot;text/plain; charset=utf-8&quot;)
+	default:
+		c.MapTo(jsonEncoder{}, (*Encoder)(nil))
+		w.Header().Set(&quot;Content-Type&quot;, &quot;application/json&quot;)
+	}
+}
+</code></pre>
+
+<p>Here, the <code>MapTo()</code> injector function is called on a <code>martini.Context</code>, meaning that the dependency is scoped to this particular request. The code also sets the correct &ldquo;Content-Type&rdquo; header, since even errors will be returned using the requested format.</p>
+
+<h2>The route handlers</h2>
+
+<p>I won&rsquo;t go into details of all route handlers (they are defined in the file <code>api.go</code> in the example repository), but I&rsquo;ll show one to talk about how martini handles the return values. The single-album GET handler looks like this:</p>
+
+<pre><code>func GetAlbum(enc Encoder, db DB, parms martini.Params) (int, string) {
+	id, err := strconv.Atoi(parms[&quot;id&quot;])
+	al := db.Get(id)
+	if err != nil || al == nil {
+		return http.StatusNotFound, Must(enc.Encode(
+			NewError(ErrCodeNotExist, fmt.Sprintf(&quot;the album with id %s does not exist&quot;, parms[&quot;id&quot;]))))
+	}
+	return http.StatusOK, Must(enc.Encode(al))
+}
+</code></pre>
+
+<p>First, we can see that <code>martini.Params</code> can be used as parameter to get a map of named parameters defined on the route pattern. If the <code>id</code> is not an integer, or if it doesn&rsquo;t exist in the database (I know for a fact that there&rsquo;s no id=0 in the database, which is why I use this dual-purpose <code>if</code>), a 404 status code is returned with a correctly-encoded error message. Note the use of the <code>Must()</code> function, since we have a <code>Recovery()</code> middleware that will trap panics and return a 500, we can safely panic in case of server-side errors. More serious projects would probably want to return a custom message along with the 500, though.</p>
+
+<p>Finally, if all goes well, a code 200 is returned, along with the encoded album. If a route handler returns two values, and the first is an <code>int</code>, Martini will use this first value as the status code, and will write the second value as a string to the <code>http.ResponseWriter</code>. If the first value is not an <code>int</code>, or if there is only one return value, it will write the first value to the <code>http.ResponseWriter</code>.</p>
+
+<h2>curl calls</h2>
+
+<p>Let&rsquo;s see how it goes with some actual calls to the API.</p>
+
+<pre><code>$ curl -i -k -u token: &quot;https://localhost:8001/albums&quot;
+HTTP/1.1 200 OK
+Content-Type: application/json
+Date: Wed, 27 Nov 2013 02:31:46 GMT
+Content-Length: 201
+
+[{&quot;id&quot;:1,&quot;band&quot;:&quot;Slayer&quot;,&quot;title&quot;:&quot;Reign In Blood&quot;,&quot;year&quot;:1986},{&quot;id&quot;:2,&quot;band&quot;:&quot;Slayer&quot;,&quot;title&quot;:&quot;Seasons In The Abyss&quot;,&quot;year&quot;:1990},{&quot;id&quot;:3,&quot;band&quot;:&quot;Bruce Springsteen&quot;,&quot;title&quot;:&quot;Born To Run&quot;,&quot;year&quot;:1975}]
+</code></pre>
+
+<p>The <code>-k</code> option is required if you use a self-signed certificate. The <code>-u</code> option specifies the user:password, which in our case is simply <code>token:</code> (empty password). The <code>-i</code> option prints the whole response, including headers. The response includes the full list of albums (the database is initialized with those 3 albums).</p>
+
+<pre><code>$ curl -i -k -u token: &quot;https://localhost:8001/albums.text?band=Slayer&quot;
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Date: Wed, 27 Nov 2013 02:36:46 GMT
+Content-Length: 68
+
+Slayer - Reign In Blood (1986)
+Slayer - Seasons In The Abyss (1990)
+</code></pre>
+
+<p>In this case, the text format is requested, and a filter is used on the band Slayer. Let&rsquo;s try a POST:</p>
+
+<pre><code>$ curl -i -k -u token: -X POST --data &quot;band=Carcass&amp;title=Heartwork&amp;year=1994&quot; &quot;https://localhost:8001/albums&quot;
+HTTP/1.1 201 Created
+Content-Type: application/json
+Location: /albums/4
+Date: Wed, 27 Nov 2013 02:38:55 GMT
+Content-Length: 57
+
+{&quot;id&quot;:4,&quot;band&quot;:&quot;Carcass&quot;,&quot;title&quot;:&quot;Heartwork&quot;,&quot;year&quot;:1994}
+</code></pre>
+
+<p>The status code is 201 - Created, the &ldquo;Location&rdquo; header is specified with the URL to the newly created resource (note that the URL should be absolute, I was lazy there), and the resource is returned in the default format (JSON). If we try to create the same resource again, in XML for a change:</p>
+
+<pre><code>$ curl -i -k -u token: -X POST --data &quot;band=Carcass&amp;title=Heartwork&amp;year=1994&quot; &quot;https://localhost:8001/albums.xml&quot;
+HTTP/1.1 409 Conflict
+Content-Type: application/xml
+Date: Wed, 27 Nov 2013 02:41:36 GMT
+Content-Length: 171
+
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;albums&gt;&lt;error code=&quot;2&quot;&gt;&lt;message&gt;the album &amp;#39;Heartwork&amp;#39; from &amp;#39;Carcass&amp;#39; already exists&lt;/message&gt;&lt;/error&gt;&lt;/albums&gt;
+</code></pre>
+
+<p>The error is returned in the correct format, with a status code 409. Updates (PUT) work fine too (I mean, everybody knows Heartwork was released in 1993, right?):</p>
+
+<pre><code>$ curl -i -k -u token: -X PUT --data &quot;band=Carcass&amp;title=Heartwork&amp;year=1993&quot; &quot;https://localhost:8001/albums/4&quot;
+HTTP/1.1 200 OK
+Content-Type: application/json
+Date: Wed, 27 Nov 2013 02:45:29 GMT
+Content-Length: 57
+
+{&quot;id&quot;:4,&quot;band&quot;:&quot;Carcass&quot;,&quot;title&quot;:&quot;Heartwork&quot;,&quot;year&quot;:1993}
+</code></pre>
+
+<p>And finally, the delete operation:</p>
+
+<pre><code>$ curl -i -k -u token: -X DELETE &quot;https://localhost:8001/albums/1&quot;
+HTTP/1.1 204 No Content
+Content-Type: application/json
+Date: Wed, 27 Nov 2013 02:46:59 GMT
+Content-Length: 0
+</code></pre>
+
+<h2>https required</h2>
+
+<p>You don&rsquo;t want to expose a basic-authenticated API (or any but the most basic public API) over http, and it is recommended to return an error in case of a clear-text call instead of silently redirecting to https, so that the API consumer can take notice. There are many ways to do this, if you have a reverse proxy in front of your API server, this may be a good place to do it. In the example app, I start two listeners, one on <code>http</code> and another on <code>https</code>, and the <code>http</code> server always returns an error:</p>
+
+<pre><code>func main() {
+	go func() {
+		// Listen on http: to raise an error and indicate that https: is required.
+		if err := http.ListenAndServe(&quot;:8000&quot;, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, &quot;https scheme is required&quot;, http.StatusBadRequest)
+		})); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	// Listen on https: with the preconfigured martini instance. The certificate files
+	// can be created using this command in this repository's root directory:
+	//
+	// go run /path/to/goroot/src/pkg/crypto/tls/generate_cert.go --host=&quot;localhost&quot;
+	//
+	if err := http.ListenAndServeTLS(&quot;:8001&quot;, &quot;cert.pem&quot;, &quot;key.pem&quot;, m); err != nil {
+		log.Fatal(err)
+	}
+}
+</code></pre>
+
+<h2>What&rsquo;s missing</h2>
+
+<p>This is a simple API example application, but it still handles many common API tasks. Martini makes this easy and elegant, thanks to its routing and dependency injection mechanisms. In the short time I took to write this article, it already evolved quite a bit, and some handlers got added to the <a href="https://github.com/codegangsta/martini-contrib">martini-contrib</a> repository too.</p>
+
+<p>If you intend to build a production-quality API, be aware that there are a few important things missing from this small example application, though:</p>
+
+<ul>
+<li>A more powerful authentication mechanism, obviously (a single access token won&rsquo;t do!)</li>
+<li>Support for JSON- (and/or XML-) encoded request bodies for POST and PUT verbs (and PATCH)</li>
+<li>Support for 405 - Method not allowed response code (currently, the API will return 404 when an unsupported method is used on a supported route)</li>
+<li>Support for GZIP compression of responses (I see that there is now a Gzip middleware on the martini-contrib repository)</li>
+<li>Probably more depending on your requirements!</li>
+</ul>
+
+<p>However, this article should&rsquo;ve given you a taste of how it can be done with Martini.</p>
+</article>
+				<p class="meta">
+					<time datetime="2013-11-27">published 2013-11-27</time>
+					<time datetime="2017-06-10">and last updated 2017-06-10</time>
+				</p>
+			</main>
+			<hr />
+			<footer>
+				<ul class="container middle">
+					<li>
+						<time datetime="2016-03-02">2016-03-02</time>
+						<a href="about-Go-logging">About Go logging for reusable packages</a>
+					</li>
+					<li>
+						<time datetime="2016-02-16">2016-02-16</time>
+						<a href="Let-the-Doer-Do-it">Let the Doer Do it</a>
+					</li>
+					<li>
+						<time datetime="2015-04-13">2015-04-13</time>
+						<a href="A-PEG-parser-generator-for-Go">A PEG parser generator for Go</a>
+					</li>
+					<li>
+						<time datetime="2014-06-16">2014-06-16</time>
+						<a href="Dealing-with-binary-files-and-uglified-json-in-Vim">Dealing with binary files and uglified JSON in Vim</a>
+					</li>
+					<li>
+						<time datetime="2014-02-19">2014-02-19</time>
+						<a href="throttled--guardian-of-the-web-server">Throttled: Guardian Of The Web Server</a>
+					</li>
+				</ul>
+				<div class="container middle">
+					<small>
+						2013-2017 Martin Angers
+						<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.en_US">CC BY-SA 3.0</a>
+						, built with
+						<a href="https://github.com/mna/trofaf">trofaf</a>
+					</small>
+				</div>
+			</footer>
+		</div>
+		<script>
+			if (document.querySelectorAll && "classList" in document.documentElement) {
+				codes = document.querySelectorAll("pre code");
+				for (var i = 0; i < codes.length; ++i) {
+					codes[i].classList.add("prettyprint", "lang-go");
+				}
+				el = document.createElement("script");
+				sc = document.getElementsByTagName("script")[0];
+				el.async = 1;
+				el.src = "https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js";
+				sc.parentNode.insertBefore(el, sc);
+			}
+		</script>
+		<script>
+			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+			ga('create', 'UA-42479727-1', '0value.com');
+			ga('send', 'pageview');
+		</script>
+	</body>
+</html>

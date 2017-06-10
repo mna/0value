@@ -1,0 +1,333 @@
+<!DOCTYPE html><!-- From HTML5 Boilerplate -->
+<html class="no-js" lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>Throttled: Guardian Of The Web Server</title>
+		<meta name="description" content="I just put the finishing touches for the release of throttled, a Go package that implements various strategies to control access to HTTP handlers. Out-of-the-box, it supports rate-limiting of requests, constant interval flow of requests and memory usage thresholds to grant or deny access, but it also provides mechanisms to extend its functionality." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link href="/css/main.css" rel="stylesheet" />
+		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
+	</head>
+	<body>
+		<div class="content">
+			
+			<header>
+				<hgroup>
+					<div class="left title">
+						<h1>
+							<a href="/">ø value</a>
+						</h1>
+						<h2>a wysiwyg hypertext cyberblog</h2>
+					</div>
+					<div class="right social">
+						<a class="huge github" href="https://github.com/mna" title="@mna on GitHub">
+							<span class="icon-github-circled"></span>
+						</a>
+						<a class="huge twitter" href="https://twitter.com/___mna___" title="@___mna___ on Twitter">
+							<span class="icon-twitter"></span>
+						</a>
+					</div>
+					<div class="clearfix"></div>
+				</hgroup>
+			</header>
+			<hr />
+			<nav>
+				<div class="container">
+					<div class="left quarter">
+						<a class="huge" href="build-a-restful-API-with-Martini" title="Build a RESTful API with Martini">«</a>
+					</div>
+					<div class="middle big half">
+						<span>Throttled: Guardian Of The Web Server</span>
+					</div>
+					<div class="right quarter">
+						<a class="huge" href="Dealing-with-binary-files-and-uglified-json-in-Vim" title="Dealing with binary files and uglified JSON in Vim">»</a>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</nav>
+			<hr />
+			<main>
+				<article lang="en"><h1>Throttled: Guardian Of The Web Server</h1>
+
+<p>I just put the finishing touches for the release of <a href="https://github.com/throttled/throttled">throttled</a>, a Go package that implements various strategies to control access to HTTP handlers. Out-of-the-box, it supports rate-limiting of requests, constant interval flow of requests and memory usage thresholds to grant or deny access, but it also provides mechanisms to extend its functionality.</p>
+
+<h2>How It Works</h2>
+
+<p>At the heart of the package is the <code>Throttler</code> structure and the <code>Limiter</code> interface. The throttler offers a single method, <code>Throttle(h http.Handler) http.Handler</code>, that wraps the given handler <code>h</code> and returns a new handler that throttles access to <code>h</code>. How it does the throttling is up to the <code>Limiter</code>.</p>
+
+<p>The <code>Limiter</code> interface is defined as follows:</p>
+
+<pre><code>type Limiter interface {
+    Start()
+    Limit(http.ResponseWriter, *http.Request) (&lt;-chan bool, error)
+}
+</code></pre>
+
+<p>The <code>Start</code> method tells the limiter to get to work, initializing any internal state as needed, and <code>Limit</code> does the actual work of applying the limiter&rsquo;s strategy for this specific request. It returns a receive-only channel of boolean that will indicate to the <code>Throttler</code> if it should allow or deny the request (if the channel returns true or false). It may also return an error, in which case the throttler will call the function assigned to the package-level <code>Error</code> variable.</p>
+
+<p>When a request is granted access, the wrapped handler is called. But what happens when the access is denied? Well, there is a package-level <code>DefaultDeniedHandler</code> that can be used. By default it returns a status 429 with a generic message, but it is a humble <code>http.Handler</code> and can be set to do whatever needs to be done.</p>
+
+<p>But since some throttlers may require specific handling of those requests, there is also a <code>DeniedHandler</code> field on the <code>Throttler</code> struct. If it is nil, the package-level <code>DefaultDeniedHandler</code> is used, otherwise the throttler-specific handler is called.</p>
+
+<h2>What It Does</h2>
+
+<p>The package usage revolves around three main functions: <code>Interval</code>, <code>RateLimit</code> and <code>MemStats</code>. There&rsquo;s also <code>Custom</code>, but this is a hook for extensibility, it doesn&rsquo;t do anything special on its own.</p>
+
+<h3>Interval</h3>
+
+<p><code>Interval(delay Delayer, bursts int, vary *VaryBy, maxKeys int) *Throttler</code></p>
+
+<p>As the name implies, this function allows requests to proceed at a given constant interval. The <code>Delayer</code> interface specifies this interval:</p>
+
+<pre><code>type Delayer interface {
+    Delay() time.Duration
+}
+</code></pre>
+
+<p>With this interface in place, it is possible to set intervals in expressive ways, using the <code>PerSec</code>, <code>PerMin</code>, <code>PerHour</code> or <code>PerDay</code> types, or the <code>D</code> type, which is simply a <code>time.Duration</code> that fulfills the <code>Delayer</code> interface by returning its own value.</p>
+
+<p>An example would surely help:</p>
+
+<pre><code>// Allow 10 requests per second, or one each 100ms
+Interval(PerSec(10), 0, nil, 0)
+// Allow 30 requests per minute, or one each 2s
+Interval(PerMin(30), 0, nil, 0)
+// Allow one request each 7 minute
+Interval(D(7*time.Minute), 0, nil, 0)
+</code></pre>
+
+<p>What look like function calls are actually conversions of integers - or time.Duration in the last case - to the specific type that fulfills the <code>Delayer</code> interface.</p>
+
+<p>Back to the <code>Interval</code> function signature, the <code>bursts</code> argument sets how many exceeding requests can be queued to proceed when their time comes. <code>vary</code> tells the throttler to apply the interval separately based on some criteria on the request. The <code>VaryBy</code> struct is defined like this:</p>
+
+<pre><code>type VaryBy struct {
+    // Vary by the RemoteAddr as specified by the net/http.Request field.
+    RemoteAddr bool
+
+    // Vary by the HTTP Method as specified by the net/http.Request field.
+    Method bool
+
+    // Vary by the URL's Path as specified by the Path field of the net/http.Request
+    // URL field.
+    Path bool
+
+    // Vary by this list of header names, read from the net/http.Request Header field.
+    Headers []string
+
+    // Vary by this list of parameters, read from the net/http.Request FormValue method.
+    Params []string
+
+    // Vary by this list of cookie names, read from the net/http.Request Cookie method.
+    Cookies []string
+
+    // Use this separator string to concatenate the various criteria of the VaryBy struct.
+    // Defaults to a newline character if empty (\n).
+    Separator string
+}
+</code></pre>
+
+<p>Finally, the <code>maxKeys</code> argument sets the maximum number of vary-by keys to keep in memory, using an LRU cache (because internally each vary-by key gets its own channel and goroutine to control the flow).</p>
+
+<p><a href="http://www.joedog.org/siege-home/">Using <code>siege</code></a> and the example applications in the /examples/ subdirectory of the repository, let&rsquo;s see the interval throttler in action:</p>
+
+<pre><code># Run the example app (in examples/interval-vary/)
+$ ./interval-vary -delay 100ms -bursts 100 -output ok
+
+# In another terminal window, start siege with the URL file to hit various URLs
+$ siege -b -f siege-urls
+
+# Output from the example app:
+2014/02/18 17:23:47 /a: ok: 1.050021944s
+2014/02/18 17:23:47 /b: ok: 1.050646811s
+2014/02/18 17:23:47 /c: ok: 1.051085882s
+2014/02/18 17:23:47 /a: ok: 1.15102831s
+2014/02/18 17:23:47 /b: ok: 1.151841098s
+2014/02/18 17:23:47 /c: ok: 1.152307554s
+2014/02/18 17:23:47 /a: ok: 1.252140208s
+2014/02/18 17:23:47 /b: ok: 1.253117856s
+2014/02/18 17:23:47 /c: ok: 1.253621192s
+</code></pre>
+
+<p>Each path receives requests at 100ms intervals.</p>
+
+<h3>RateLimit</h3>
+
+<p><code>RateLimit(quota Quota, vary *VaryBy, store Store) *Throttler</code></p>
+
+<p>This function creates a throttler that limits the number of requests allowed in a time window, which is a very common requirement in public RESTful APIs.</p>
+
+<p>The Quota interface defines a single method:</p>
+
+<pre><code>type Quota interface {
+    Quota() (int, time.Duration)
+}
+</code></pre>
+
+<p>It returns the number of requests and the duration of the time window. Conveniently, the <code>PerXxx</code> types that implement the <code>Delayer</code> interface also implement the <code>Quota</code> interface, and there is a <code>Q</code> type to define custom quotas. Again, examples help:</p>
+
+<pre><code>// Allow 10 requests per second
+RateLimit(PerSec(10), &amp;VaryBy{RemoteAddr: true}, store.NewMemStore(0))
+// Allow 30 requests per minute
+RateLimit(PerMin(30), &amp;VaryBy{RemoteAddr: true}, store.NewMemStore(0))
+// Allow 15 requests each 30 minute
+RateLimit(Q{15, 30*time.Minute}, &amp;VaryBy{RemoteAddr: true}, store.NewMemStore(0))
+</code></pre>
+
+<p>The <code>vary</code> argument plays the same role as in <code>Interval</code>. The <code>store</code> is used to save the rate-limiting state. The <code>Store</code> interface is:</p>
+
+<pre><code>type Store interface {
+    // Incr increments the count for the specified key and returns the new value along
+    // with the number of seconds remaining. It may return an error
+    // if the operation fails.
+    Incr(key string, window time.Duration) (cnt int, secs int, e error)
+
+    // Reset resets the key to 1 with the specified window duration. It must create the
+    // key if it doesn't exist. It returns an error if it fails.
+    Reset(key string, window time.Duration) error
+}
+</code></pre>
+
+<p>The <code>throttled/store</code> package offers an in-memory store and a Redis-based store.</p>
+
+<p>The rate-limiter automatically adds the <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code> and <code>X-RateLimit-Reset</code> headers on the response. The Limit indicates the number of requests allowed in the window, Remaining is the number of requests remaining in the current window, and Reset indicates the number of seconds remaining until the end of the current window.</p>
+
+<p>When the limit is busted, the header <code>Retry-After</code> is also added to the response, with the same value as the Reset header.</p>
+
+<p>Using <code>curl</code> and the example app, let&rsquo;s see it in action:</p>
+
+<pre><code># Run the example app (in examples/rate-limit/)
+$ ./rate-limit -requests 3 -window 30s
+
+# Run curl the first time
+$ curl -i http://localhost:9000/a
+HTTP/1.1 200 OK
+X-Ratelimit-Limit: 3
+X-Ratelimit-Remaining: 2
+X-Ratelimit-Reset: 29
+Date: Wed, 19 Feb 2014 00:59:15 GMT
+Content-Length: 0
+Content-Type: text/plain; charset=utf-8
+
+# ... (skipped 2nd and 3rd) run curl a fourth time
+$ curl -i http://localhost:9000/a
+HTTP/1.1 429 Too Many Requests
+Content-Type: text/plain; charset=utf-8
+Retry-After: 23
+X-Ratelimit-Limit: 3
+X-Ratelimit-Remaining: 0
+X-Ratelimit-Reset: 23
+Date: Wed, 19 Feb 2014 00:59:22 GMT
+Content-Length: 15
+
+limit exceeded
+</code></pre>
+
+<h3>MemStats</h3>
+
+<p><code>MemStats(thresholds *runtime.MemStats, refreshRate time.Duration) *Throttler</code></p>
+
+<p>This function accepts a struct of memory stats with the desired thresholds, and a refresh rate indicating when to refresh the current memory stats values (0 means read on each request). Any integer field in the MemStats struct can be used as a threshold value, and zero-valued fields are ignored.</p>
+
+<p>The thresholds must be in absolute value (i.e. Allocs = 10 000 means 10 000 bytes allocated by the process, not 10 000 bytes more than some previous reading), but there is the helper function <code>MemThresholds(offsets *runtime.MemStats) *runtime.MemStats</code> that  translates offsets to absolute values.</p>
+
+<p><a href="https://github.com/rakyll/boom">Using <code>boom</code></a> (a nice Go load generator) and the memstats example app (that fully loads in memory a 64Kb file on each request), we can test its behaviour:</p>
+
+<pre><code># Run the example app (in examples/memstats/)
+$ ./memstats -total 500000 -output ok
+
+# Run boom
+$ boom -n 100 -c 10 http://localhost:9000
+
+# Example app output
+2014/02/18 20:06:17 ok: 1.722598952s
+2014/02/18 20:06:17 ok: 1.722931271s
+2014/02/18 20:06:17 ok: 1.72315662s
+2014/02/18 20:06:17 ok: 1.723366605s
+2014/02/18 20:06:26 ok: 4, ko: 96
+2014/02/18 20:06:26 TotalAllocs: 1309 Kb, Allocs: 1197 Kb, Mallocs: 2833, NumGC: 4
+</code></pre>
+
+<p>Obviously, some memory stats just go up and never down, so once the threshold is reached, no other request will ever be allowed. But since the DeniedHandler is just a Handler, it is possible to build a routing strategy such that once the threshold is reached, requests are sent to a throttled handler that allows requests to go through at a slow interval, for example, or a handler that restarts the process, whatever&rsquo;s required!</p>
+
+<h3>Custom</h3>
+
+<p><code>Custom(l Limiter) *Throttler</code></p>
+
+<p>A quick word on the Custom function, it accepts any <code>Limiter</code> as argument and returns a throttler that uses this limiter. There is an example of a custom limiter in the /examples/custom/ subdirectory.</p>
+
+<h2>Miscellaneous Closing Thoughts</h2>
+
+<ul>
+<li><p>As alluded to in the MemStats section, the package manipulates plain old HTTP handlers, so combining them in useful and creative ways is definitely possible. The DeniedHandler is just that, a Handler, it doesn&rsquo;t have to return a 429 or 503 error, it can do whatever is needed to do, like call a differently throttled (or non-throttled) handler.</p></li>
+
+<li><p>The example apps are useful for testing with the data race detector in real-world (or not-so-real-world) usage. Just <code>go build -race</code> the app, and see how it goes.</p></li>
+
+<li><p>Inspired by <a href="http://golang.org/misc/git/pre-commit">Go&rsquo;s pre-commit hook example</a> in its misc/git/ folder, I added a pre-commit hook in my Go repositories that run both <a href="https://github.com/golang/lint"><code>golint</code></a> and <a href="http://godoc.org/code.google.com/p/go.tools/cmd/vet"><code>go vet</code></a> on my packages. Both programs have proved very helpful in finding different categories of bugs (vet) and consistency/style errors (lint). You can find my hook in the /misc/ subdirectory of the repository. Note that the linter output is purely informational, it doesn&rsquo;t return an exit code != 0 and thus does not prevent the commit from happening if it finds some problems.</p></li>
+</ul>
+
+<p>That&rsquo;s it for now, hope you like it! <a href="https://github.com/throttled/throttled">Fork, star, test, report issues and PR at will</a>!</p>
+</article>
+				<p class="meta">
+					<time datetime="2014-02-19">published 2014-02-19</time>
+					<time datetime="2017-06-10">and last updated 2017-06-10</time>
+				</p>
+			</main>
+			<hr />
+			<footer>
+				<ul class="container middle">
+					<li>
+						<time datetime="2016-03-02">2016-03-02</time>
+						<a href="about-Go-logging">About Go logging for reusable packages</a>
+					</li>
+					<li>
+						<time datetime="2016-02-16">2016-02-16</time>
+						<a href="Let-the-Doer-Do-it">Let the Doer Do it</a>
+					</li>
+					<li>
+						<time datetime="2015-04-13">2015-04-13</time>
+						<a href="A-PEG-parser-generator-for-Go">A PEG parser generator for Go</a>
+					</li>
+					<li>
+						<time datetime="2014-06-16">2014-06-16</time>
+						<a href="Dealing-with-binary-files-and-uglified-json-in-Vim">Dealing with binary files and uglified JSON in Vim</a>
+					</li>
+					<li>
+						<time datetime="2014-02-19">2014-02-19</time>
+						<a href="throttled--guardian-of-the-web-server">Throttled: Guardian Of The Web Server</a>
+					</li>
+				</ul>
+				<div class="container middle">
+					<small>
+						2013-2017 Martin Angers
+						<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.en_US">CC BY-SA 3.0</a>
+						, built with
+						<a href="https://github.com/mna/trofaf">trofaf</a>
+					</small>
+				</div>
+			</footer>
+		</div>
+		<script>
+			if (document.querySelectorAll && "classList" in document.documentElement) {
+				codes = document.querySelectorAll("pre code");
+				for (var i = 0; i < codes.length; ++i) {
+					codes[i].classList.add("prettyprint", "lang-go");
+				}
+				el = document.createElement("script");
+				sc = document.getElementsByTagName("script")[0];
+				el.async = 1;
+				el.src = "https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js";
+				sc.parentNode.insertBefore(el, sc);
+			}
+		</script>
+		<script>
+			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+			ga('create', 'UA-42479727-1', '0value.com');
+			ga('send', 'pageview');
+		</script>
+	</body>
+</html>

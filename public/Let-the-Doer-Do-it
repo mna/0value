@@ -1,0 +1,201 @@
+<!DOCTYPE html><!-- From HTML5 Boilerplate -->
+<html class="no-js" lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>Let the Doer Do it</title>
+		<meta name="description" content="There are lots of Go packages out there that make HTTP requests, maybe because they wrap a RESTful API or they do web crawling, etc. Regardless of the reason, at some point they use an *http.Client to make those requests. This article is a recommendation on how I believe this client should be managed." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link href="/css/main.css" rel="stylesheet" />
+		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
+	</head>
+	<body>
+		<div class="content">
+			
+			<header>
+				<hgroup>
+					<div class="left title">
+						<h1>
+							<a href="/">ø value</a>
+						</h1>
+						<h2>a wysiwyg hypertext cyberblog</h2>
+					</div>
+					<div class="right social">
+						<a class="huge github" href="https://github.com/mna" title="@mna on GitHub">
+							<span class="icon-github-circled"></span>
+						</a>
+						<a class="huge twitter" href="https://twitter.com/___mna___" title="@___mna___ on Twitter">
+							<span class="icon-twitter"></span>
+						</a>
+					</div>
+					<div class="clearfix"></div>
+				</hgroup>
+			</header>
+			<hr />
+			<nav>
+				<div class="container">
+					<div class="left quarter">
+						<a class="huge" href="A-PEG-parser-generator-for-Go" title="A PEG parser generator for Go">«</a>
+					</div>
+					<div class="middle big half">
+						<span>Let the Doer Do it</span>
+					</div>
+					<div class="right quarter">
+						<a class="huge" href="about-Go-logging" title="About Go logging for reusable packages">»</a>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</nav>
+			<hr />
+			<main>
+				<article lang="en"><h1>Let the Doer Do it</h1>
+
+<p><small>(a humble recommendation for Go packages that make HTTP requests)</small></p>
+
+<p>There are lots of Go packages out there that make HTTP requests, maybe because they wrap a RESTful API or they do web crawling, etc. Regardless of the reason, at some point they use an <code>*http.Client</code> to make those requests. This article is a recommendation on how I believe this client should be managed in the context of reusable packages. But let&rsquo;s start by looking at various common ways it is used, and why this isn&rsquo;t optimal.</p>
+
+<h2>Directly using <code>http.DefaultClient</code></h2>
+
+<p>Go&rsquo;s <code>net/http</code> package provides a <code>DefaultClient</code> variable that is a <code>*http.Client</code>. The package-level function helpers <code>http.Get</code>, <code>http.Post</code>, etc. use this value. By default, this is a zero-value <code>&amp;http.Client{}</code> struct, which means <a href="https://medium.com/@nate510/don-t-use-go-s-default-http-client-4804cb19f779#.7yoflw59x">it has no timeout set</a> (which is not <em>totally</em> exact, the zero-valued client uses the <code>http.DefaultTransport</code> which has a connection timeout, but it doesn&rsquo;t have a timeout for slow responses).</p>
+
+<p>This default client is just a value, and may be changed and configured as desired. Some packages may be tempted to use this value and be done with it. HTTP client problem solved. Well, that&rsquo;s not such a great idea, because:</p>
+
+<ul>
+<li>As mentioned, by default, this value has no response timeout;</li>
+<li>There is only one such default client, so all packages that use it are necessarily configured the same way;</li>
+<li>It cannot be mocked by the package to test the response- and error-handling logic without making network calls (one could mock at the <a href="https://golang.org/pkg/net/http/#RoundTripper">http.RoundTripper level</a>, but I believe there is a better way);</li>
+</ul>
+
+<p>A reusable package should not hijack the default Client like this and behave as if it was the only one doing HTTP requests in an application. The <code>DefaultClient</code> makes for a fine <strong>default value</strong> if the caller doesn&rsquo;t care and doesn&rsquo;t provide anything better, but the package should support other options.</p>
+
+<h2>Internally creating its own <code>*http.Client</code></h2>
+
+<p>An alternative approach is for the package to create its own <code>*http.Client</code> so it doesn&rsquo;t rely on the shared <code>DefaultClient</code> value (note that there is <a href="https://godoc.org/net/http#Client">nothing wrong in sharing an HTTP client in a concurrent way</a> - that is not the point here, the &ldquo;sharing&rdquo; issue in this context is that the configuration of the client is shared).</p>
+
+<p>This is marginally better, but unless it provides a bunch of options to set client-level and transport-level timeouts and configuration, it means that the package decides for the caller how it should behave, when it is the caller that knows best for its specific use-case what timeout values make sense.</p>
+
+<p>And if the package provides all the options to configure the client, well here again, I believe there is a better way, and one that drastically simplifies the API of the package.</p>
+
+<h2>Accepting an <code>*http.Client</code> as a parameter</h2>
+
+<p>Now this looks like a great solution. Let the caller provide the <code>*http.Client</code> value that the package will use to make requests. And why not fallback on the <code>http.DefaultClient</code> if <code>nil</code> is provided. That&rsquo;s it, right? That&rsquo;s the <em>right way</em>?</p>
+
+<p>Well&hellip; It is significantly better than the previous alternatives. The caller gets to fully configure the client as it sees fit, and various packages can use different clients, each with its own specific configuration. Responses can be mocked at the <code>RoundTripper</code> level for tests. But there&rsquo;s still one thing : you can&rsquo;t <em>compose</em> behaviour for the client.</p>
+
+<p>Wait, where did that one come from?</p>
+
+<p>You know how the <code>io.Reader</code> and <code>io.Writer</code> interfaces are such cool flexible abstractions? Like, you can <a href="https://golang.org/pkg/io/#LimitReader">take any <code>io.Reader</code> and make it an <code>io.LimitedReader</code></a>? Or the <code>http.Handler</code> interface for web servers, how you can do crazy things with middleware, combining them in various ways as presented by <a href="https://www.youtube.com/watch?v=xyDkyFjzFVc">Tomás Senart at Gophercon 2015</a>?</p>
+
+<p>The interface enables that composition and separation of concerns. The same could be done for the HTTP client. What for? Maybe to add logging, or to sign the requests going through this client, etc. And of course, it also means that the client, being an interface, can easily be mocked to return pre-determined values to test the handling of responses and errors without having to do the network calls.</p>
+
+<p>I mentioned earlier that, if there is no other way, the <code>http.RoundTripper</code> interface could be used to mock requests. It is at a lower level than the HTTP client - at the &ldquo;transport&rdquo; level, and the Go documentation mentions this about it:</p>
+
+<blockquote>
+<p>RoundTrip should not modify the request, except for consuming and closing the Body, including on errors.</p>
+</blockquote>
+
+<p>So although it could work for mocking responses, this is clearly not the level where we want to compose HTTP clients, since we want to have the possibility to modify the request (e.g. for signing a request before executing it).</p>
+
+<p>Enter the Doer&hellip;</p>
+
+<h2>Accept a <code>Doer</code> as a parameter</h2>
+
+<p>The Doer is a single-method interface, as is often the case in Go:</p>
+
+<pre><code>type Doer interface {
+    Do(*http.Request) (*http.Response, error)
+}
+</code></pre>
+
+<p>It does not really exist - it is not defined anywhere in the stdlib - but it is trivial to summon it from thin air in a package. Just do as I did above, and because Go implicitly satisfies interfaces, any type that implements this method will be a valid <code>Doer</code>.</p>
+
+<p>Speaking of which, if this method looks familiar, it&rsquo;s probably because this is implemented by the <code>*http.Client</code>. This is the general-purpose method to make HTTP requests. Other methods of the client, such as <code>Get</code> or <code>Post</code>, are just helpers built on top of <code>Do</code> (at least conceptually - internally they end up calling a common unexported method). Why not provide all the methods of the <code>*http.Client</code>? Because they are just helpers and all you really need is <code>Do</code>. Take one for the team, and minimize the API surface by using just this one (it&rsquo;s really not that hard), making life easier for the users of your package and enabling that very composition.</p>
+
+<p>You can then have your package initialized like this or something similar:</p>
+
+<pre><code>func NewFooBar(client Doer /*, other options*/) *FooBar{
+    httpClient := client
+    if httpClient == nil {
+        // Using DefaultClient as a fallback default makes sense, the caller
+        // explicitly said it doesn't care.
+        httpClient = http.DefaultClient
+    }
+    // rest of initialization
+    return &amp;FooBar{
+        doer: httpClient,
+        // other stuff...
+    }
+}
+</code></pre>
+
+<p>Users of your package can now configure the client as needed, setting a specific timeout, transport, etc., without the package having to receive a ton of configuration options. The community can build interesting &ldquo;decorators&rdquo; or wrappers around that interface the same way it has for <code>http.Handler</code> and <code>io.Reader/Writer</code>, and network calls can easily be mocked for tests.</p>
+
+<h2>One last thing&hellip; about retries</h2>
+
+<p>Another thing that is quite common is for those packages to implement retries in case of temporary failures, each in subtly (or vastly) different ways, or sometimes not at all, leaving the calling application to implement its retry strategy if needed. Now if you&rsquo;ve read this far, you may think that I will suggest implementing a <code>Doer</code> middleware that takes care of it, and that would make a ton of sense. But I believe this is one of those rare cases that is more interesting to do at the <code>http.RoundTripper</code> level. This way, the <code>http.Client.Timeout</code> value applies to the request as a whole, including any retries, making it easier to reason about, and redirections behave correctly (if you ask the client to follow N redirections, with retries at the <code>RoundTripper</code> level, it will follow up to N, while at the <code>Doer</code> level it would reset the count at each retry - say, if it retries successfully a failed request after 3 redirections, it would still allow for N retries after that), and a retry really only needs to consume and close the request body, which is exactly what the Go documentation claims a <code>RoundTripper</code> should limit itself to.</p>
+
+<p>I have written such a package, it is <a href="https://github.com/PuerkitoBio/rehttp">called rehttp and is available as a BSD-licensed open-source package on Github</a>. Give it a try and raise issues if anything doesn&rsquo;t work as advertised (it is only Go1.6+ though, because of the recent changes in how to cancel a request). I hope you like it and find it useful.</p>
+</article>
+				<p class="meta">
+					<time datetime="2016-02-16">published 2016-02-16</time>
+					<time datetime="2017-06-10">and last updated 2017-06-10</time>
+				</p>
+			</main>
+			<hr />
+			<footer>
+				<ul class="container middle">
+					<li>
+						<time datetime="2016-03-02">2016-03-02</time>
+						<a href="about-Go-logging">About Go logging for reusable packages</a>
+					</li>
+					<li>
+						<time datetime="2016-02-16">2016-02-16</time>
+						<a href="Let-the-Doer-Do-it">Let the Doer Do it</a>
+					</li>
+					<li>
+						<time datetime="2015-04-13">2015-04-13</time>
+						<a href="A-PEG-parser-generator-for-Go">A PEG parser generator for Go</a>
+					</li>
+					<li>
+						<time datetime="2014-06-16">2014-06-16</time>
+						<a href="Dealing-with-binary-files-and-uglified-json-in-Vim">Dealing with binary files and uglified JSON in Vim</a>
+					</li>
+					<li>
+						<time datetime="2014-02-19">2014-02-19</time>
+						<a href="throttled--guardian-of-the-web-server">Throttled: Guardian Of The Web Server</a>
+					</li>
+				</ul>
+				<div class="container middle">
+					<small>
+						2013-2017 Martin Angers
+						<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.en_US">CC BY-SA 3.0</a>
+						, built with
+						<a href="https://github.com/mna/trofaf">trofaf</a>
+					</small>
+				</div>
+			</footer>
+		</div>
+		<script>
+			if (document.querySelectorAll && "classList" in document.documentElement) {
+				codes = document.querySelectorAll("pre code");
+				for (var i = 0; i < codes.length; ++i) {
+					codes[i].classList.add("prettyprint", "lang-go");
+				}
+				el = document.createElement("script");
+				sc = document.getElementsByTagName("script")[0];
+				el.async = 1;
+				el.src = "https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js";
+				sc.parentNode.insertBefore(el, sc);
+			}
+		</script>
+		<script>
+			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+			ga('create', 'UA-42479727-1', '0value.com');
+			ga('send', 'pageview');
+		</script>
+	</body>
+</html>

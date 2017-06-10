@@ -1,0 +1,222 @@
+<!DOCTYPE html><!-- From HTML5 Boilerplate -->
+<html class="no-js" lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>A PEG parser generator for Go</title>
+		<meta name="description" content="Parsing expression grammars (PEGs) are an interesting alternative to the traditional context-free grammars (CFGs) often seen in the field of programming languages - usually in some flavor of Backus-Naur form. Attributed to Bryan Ford and his 2004 paper, this is a relatively new theory. I spent the last few weeks working on a PEG-based parser generator for Go (think compiler-compiler, a-la yacc/bison). This gave birth to pigeon." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link href="/css/main.css" rel="stylesheet" />
+		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
+	</head>
+	<body>
+		<div class="content">
+			
+			<header>
+				<hgroup>
+					<div class="left title">
+						<h1>
+							<a href="/">ø value</a>
+						</h1>
+						<h2>a wysiwyg hypertext cyberblog</h2>
+					</div>
+					<div class="right social">
+						<a class="huge github" href="https://github.com/mna" title="@mna on GitHub">
+							<span class="icon-github-circled"></span>
+						</a>
+						<a class="huge twitter" href="https://twitter.com/___mna___" title="@___mna___ on Twitter">
+							<span class="icon-twitter"></span>
+						</a>
+					</div>
+					<div class="clearfix"></div>
+				</hgroup>
+			</header>
+			<hr />
+			<nav>
+				<div class="container">
+					<div class="left quarter">
+						<a class="huge" href="Dealing-with-binary-files-and-uglified-json-in-Vim" title="Dealing with binary files and uglified JSON in Vim">«</a>
+					</div>
+					<div class="middle big half">
+						<span>A PEG parser generator for Go</span>
+					</div>
+					<div class="right quarter">
+						<a class="huge" href="Let-the-Doer-Do-it" title="Let the Doer Do it">»</a>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</nav>
+			<hr />
+			<main>
+				<article lang="en"><h1>A PEG parser generator for Go</h1>
+
+<p><a href="http://en.wikipedia.org/wiki/Parsing_expression_grammar">Parsing expression grammars (PEGs)</a> are an interesting alternative to the traditional <a href="http://en.wikipedia.org/wiki/Context-free_grammar">context-free grammars (CFGs)</a> often seen in the field of programming languages - usually in some flavor of <a href="http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form">Backus-Naur form</a>. Attributed to <a href="http://pdos.csail.mit.edu/~baford/packrat/popl04/peg-popl04.pdf">Bryan Ford and his 2004 paper</a>, this is a relatively new theory. PEGs are unambiguous and offer unlimited lookahead, which also means potentially exponential time performance in pathological cases - something that can be mitigated in practice with memoization of results, guaranteeing linear time. No lexer is required, the grammar is &ldquo;self-contained&rdquo;, which is another distinguishing characteristic.</p>
+
+<p>This piqued my interest, and I spent the last few weeks working on a PEG-based parser generator for Go (think compiler-compiler, <em>à la</em> yacc/bison). It <a href="https://github.com/mna/pigeon">gave birth to <code>pigeon</code></a>, a Go command-line tool that parses a PEG file and generates Go code that can parse input based on the source grammar.</p>
+
+<h2>A quick taste of PEG, pigeon-style</h2>
+
+<p>It is not the goal of this article to teach parsing expression grammars, but just to give a quick idea of what it looks like, a valid calculator grammar can look like this (full listing available in the <a href="https://github.com/mna/pigeon">github repository</a>, under <code>pigeon/examples/calculator</code>):</p>
+
+<pre><code>// helper function `eval` omitted for brevity
+
+Expr ⟵ _ first:Term rest:( _ AddOp _ Term )* _ {
+    return eval(first, rest), nil
+}
+
+Term ⟵ first:Factor rest:( _ MulOp _ Factor )* {
+    return eval(first, rest), nil
+}
+
+Factor ⟵ '(' expr:Expr ')' {
+    return expr, nil
+} / integer:Integer {
+    return integer, nil
+}
+
+AddOp ⟵ ( '+' / '-' ) {
+    return string(c.text), nil
+}
+
+MulOp ⟵ ( '*' / '/' ) {
+    return string(c.text), nil
+}
+
+Integer ⟵ '-'? [0-9]+ {
+    return strconv.Atoi(string(c.text))
+}
+
+_ &quot;whitespace&quot; ⟵ [ \n\t\r]*
+</code></pre>
+
+<p>It&rsquo;s fairly easy to see that there&rsquo;s a rule (non-terminal) on the left side of the arrow, associated with a definition (expressions, other non-terminals or terminals) on the right-hand side. Between curly braces are the code blocks associated with the expression - if there&rsquo;s a match, this code gets called. It returns the result of the expression and a (possibly nil) error. This is Go code, obviously.</p>
+
+<p>Many constructs look a lot like regular expressions - indeed, character classes and repetition operators are pretty much what you&rsquo;d expect (<code>?</code> is zero or one, <code>*</code> is zero or more and <code>+</code> is one or more). String and character literals are simple too - there must be an exact match in the input text. The <code>/</code> separator is the ordered choice expression, the first expression that matches is used, so the result of parsing a given input text is always deterministic and unambiguous.</p>
+
+<p>The <code>&quot;whitespace&quot;</code> string literal on the left side of the last rule is what is called a display name in pigeon - it can be used to give a friendlier name to a rule and will appear in error messages instead of the rule identifier.</p>
+
+<p>But what is that strange <code>c.text</code> reference in the code blocks? Each code block gets generated as a method on the <code>*current</code> type, which is defined like this:</p>
+
+<pre><code>type current struct {
+    pos  position
+    text []byte
+}
+</code></pre>
+
+<p>By default, the receiver variable is named <code>c</code>, but that is configurable via a command-line flag. The <code>position</code> type gives the current position in the parser with <code>line</code>, <code>col</code> and <code>offset</code> fields (the first two are 1-based, <code>col</code> being a count of runes since the beginning of the line, and <code>offset</code> is a 0-based count of bytes since the start of the data). The <code>text</code> field is the slice of matching bytes in the current expression. This is a slice of the original source text, so it should not be modified.</p>
+
+<p>A labeled expression, where an identifier is followed by <code>:</code> before an expression (like <code>first</code> and <code>rest</code> in the calculator grammar above), is a variable that &ldquo;captures&rdquo; the value of the associated expression, and makes that value available in the corresponding code block. It is converted to an argument (an empty interface) in the generated method for the code block. By default, the value of an expression is a slice of bytes, but if the expression is a sequence or a <code>*</code> or <code>+</code> repeating expression, then the value in the <code>interface{}</code> will be a <code>[]interface{}</code> of the corresponding length. Of course all this can be overridden with a code block that returns something else (often an <a href="http://en.wikipedia.org/wiki/Abstract_syntax_tree">abstract syntax tree</a> node).</p>
+
+<h2>Looks like Go, outputs Go</h2>
+
+<p>Although the features and syntax were inspired by the javascript project <a href="http://pegjs.org/">PEG.js</a>, <code>pigeon</code> is made for Go and it shows. The identifiers, string and character literals and comments all follow the same rules as in the Go language, and Go&rsquo;s keywords and predeclared identifiers are disallowed as PEG labels. Also, thanks to Go&rsquo;s great Unicode support, <code>pigeon</code> fully supports Unicode code points. The grammars and source text must be UTF-8-encoded text, and it is easy to match against specific Unicode values or classes of values.</p>
+
+<pre><code>// this is a single-line comment
+
+/* this is
+a multi-line
+comment */
+
+'a' // a single character with the same escape sequences as in Go
+
+&quot;a double-quoted string with the same escape sequences as in Go, e.g. \n or \u2190&quot;
+
+`a raw string
+where \ are just \,
+no escapes, as in Go`
+</code></pre>
+
+<p>In addition to string and character literals, as seen above, character classes can be used in square brackets, similar to regular expressions:</p>
+
+<pre><code>[abc]       // a, b or c
+[a-z]       // a to z (a range where any character within the integral value of the characters can be used, inclusively)
+[\n\r\t]    // the same escape sequences as in Go strings, but &quot; and ' cannot be escaped, although ] must be escaped
+[\pL]       // single-letter Unicode class
+[\p{Latin}] // Unicode class name
+</code></pre>
+
+<p>Literals and character classes can have a lowercase <code>&quot;i&quot;</code> suffix to indicate that the matching should be case-insensitive. There was no obvious syntax to make this Go-like, so the same syntax as PEG.js is used.</p>
+
+<pre><code>'A'i
+&quot;A String&quot;i
+`A raw string`i
+[a-z]i
+</code></pre>
+
+<p>And character classes can start with a <code>^</code> to invert the condition, so <code>[^a-z]</code> means &ldquo;match anything that is not <code>a...z</code>&rdquo;.</p>
+
+<p>Even though pigeon outputs generated code, care has been taken to make this good, readable and idiomatic code. In particular, provided the code blocks in the grammar do the same, the generated code passes both <a href="https://github.com/golang/lint"><code>golint</code></a> and <a href="http://godoc.org/golang.org/x/tools/cmd/vet"><code>go vet</code></a>. It uses no external dependency.</p>
+
+<h2>Dogfooding</h2>
+
+<p>The pigeon command-line tool is itself a parser generated by pigeon. Somehow this feels like Inception, and is just as easy to reason about as the movie. The initial issue of generating the first parser generator is called <a href="http://en.wikipedia.org/wiki/Bootstrapping_(compilers)">bootstrapping</a> and is a common concept in compilers (as a matter of fact, <a href="https://docs.google.com/document/d/1OaatvGhEAq7VseQ9kkavxKNAfepWy2yhPUBs96FGV28/edit">Go recently switched</a> to a compiler written in Go for version 1.5, after using a C compiler for the previous versions).</p>
+
+<p>To bootstrap pigeon, I use a traditional hand-written lexer and recursive top-down parser found in the <code>pigeon/bootstrap</code> package. It only parses the necessary subset of the PEG syntax to create the initial parser generator (the bootstrap-specific grammar can be found in <code>pigeon/grammar/bootstrap.peg</code>). The <code>bootstrap-build</code> command is the command-line front-end to this bootstrapping parser, and generates the initial parser generator called <code>bootstrap-pigeon</code>.</p>
+
+<p>Then, <code>bootstrap-pigeon</code> is able to parse the full grammar (found in <code>pigeon/grammar/pigeon.peg</code>), and the final, official <code>pigeon</code> tool is built this way. As a sanity check, the output of running <code>bootstrap-pigeon</code> and <code>pigeon</code> on its own grammar can be compared and should be identical, as internally both use the same logic: the grammar is parsed into an AST defined in package <code>pigeon/ast</code> and the code is generated using <code>pigeon/builder</code>.</p>
+
+<p>The <a href="https://godoc.org/github.com/mna/pigeon">complete pigeon documentation can be found on the godoc page</a>, please do <a href="https://github.com/mna/pigeon/issues">file an issue</a> if something is not clear or is clearly wrong. And if you use it and like it, <a href="https://github.com/mna/pigeon">star it on github</a> and talk about it - that&rsquo;s probably the easiest way to contribute to the success of an open source project. You can also <a href="https://twitter.com/___mna___">follow me on Twitter</a>, that&rsquo;s where I will mention significant updates to my open source projects.</p>
+</article>
+				<p class="meta">
+					<time datetime="2015-04-13">published 2015-04-13</time>
+					<time datetime="2017-06-10">and last updated 2017-06-10</time>
+				</p>
+			</main>
+			<hr />
+			<footer>
+				<ul class="container middle">
+					<li>
+						<time datetime="2016-03-02">2016-03-02</time>
+						<a href="about-Go-logging">About Go logging for reusable packages</a>
+					</li>
+					<li>
+						<time datetime="2016-02-16">2016-02-16</time>
+						<a href="Let-the-Doer-Do-it">Let the Doer Do it</a>
+					</li>
+					<li>
+						<time datetime="2015-04-13">2015-04-13</time>
+						<a href="A-PEG-parser-generator-for-Go">A PEG parser generator for Go</a>
+					</li>
+					<li>
+						<time datetime="2014-06-16">2014-06-16</time>
+						<a href="Dealing-with-binary-files-and-uglified-json-in-Vim">Dealing with binary files and uglified JSON in Vim</a>
+					</li>
+					<li>
+						<time datetime="2014-02-19">2014-02-19</time>
+						<a href="throttled--guardian-of-the-web-server">Throttled: Guardian Of The Web Server</a>
+					</li>
+				</ul>
+				<div class="container middle">
+					<small>
+						2013-2017 Martin Angers
+						<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.en_US">CC BY-SA 3.0</a>
+						, built with
+						<a href="https://github.com/mna/trofaf">trofaf</a>
+					</small>
+				</div>
+			</footer>
+		</div>
+		<script>
+			if (document.querySelectorAll && "classList" in document.documentElement) {
+				codes = document.querySelectorAll("pre code");
+				for (var i = 0; i < codes.length; ++i) {
+					codes[i].classList.add("prettyprint", "lang-go");
+				}
+				el = document.createElement("script");
+				sc = document.getElementsByTagName("script")[0];
+				el.async = 1;
+				el.src = "https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js";
+				sc.parentNode.insertBefore(el, sc);
+			}
+		</script>
+		<script>
+			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+			ga('create', 'UA-42479727-1', '0value.com');
+			ga('send', 'pageview');
+		</script>
+	</body>
+</html>
