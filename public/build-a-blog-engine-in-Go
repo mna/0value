@@ -7,7 +7,7 @@
 		<meta name="description" content="I built a static blog generator in Go. It&#39;s called trofaf because that&#39;s its name. Get this: it takes markdown files, reads some YAML front matter, and generates good ol&#39; HTML files. I can already smell the Nobel. Anyway, the goal of this post is not to brag about the novelty of the thing, but to show how easy it is to get this done with Go&#39;s rich standard library and some fine userland packages." />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link href="/css/main.css" rel="stylesheet" />
-		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<link rel="alternate" href="http://planner-eagle-44854.netlify.com/rss" type="application/rss&#43;xml" title="RSS" />
 		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
 	</head>
 	<body>
@@ -42,7 +42,7 @@
 						<span>Build a blog engine in Go</span>
 					</div>
 					<div class="right quarter">
-						<a class="huge" href="implementing-lua-coroutines-in-Go" title="Implementing Lua coroutines in Go">»</a>
+						<a title="Implementing Lua coroutines in Go" class="huge" href="implementing-lua-coroutines-in-Go">»</a>
 					</div>
 					<div class="clearfix"></div>
 				</div>

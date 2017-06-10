@@ -7,7 +7,7 @@
 		<meta name="description" content="I&#39;ve been toying with this idea for a while. To bring a simple, dynamic language to complement Go - somewhat like what Lua is to C. I&#39;ve built to some working state various virtual machines in Go, but for the last few months, I&#39;ve focused on designing from scratch a simple and clean virtual machine to run a new programming language, agora, that will feel right at home for Go developers." />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link href="/css/main.css" rel="stylesheet" />
-		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<link rel="alternate" href="http://planner-eagle-44854.netlify.com/rss" type="application/rss&#43;xml" title="RSS" />
 		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
 	</head>
 	<body>
@@ -36,13 +36,13 @@
 			<nav>
 				<div class="container">
 					<div class="left quarter">
-						<a class="huge" href="my-Go-centric-Vim-setup" title="My (Go-centric) Vim Setup">«</a>
+						<a title="My (Go-centric) Vim Setup" class="huge" href="my-Go-centric-Vim-setup">«</a>
 					</div>
 					<div class="middle big half">
 						<span>Introducing agora: a dynamic, embeddable programming language built with Go</span>
 					</div>
 					<div class="right quarter">
-						<a class="huge" href="agora-v0-2--closures--coroutines-and-for--range" title="Agora v0.2: Closures, Coroutines and For-Range">»</a>
+						<a title="Agora v0.2: Closures, Coroutines and For-Range" class="huge" href="agora-v0-2--closures--coroutines-and-for--range">»</a>
 					</div>
 					<div class="clearfix"></div>
 				</div>

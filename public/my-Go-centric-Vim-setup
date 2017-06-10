@@ -7,7 +7,7 @@
 		<meta name="description" content="This is the result of quite a few googling safaris, and hopefully it can prove helpful to others wanting to write (especially Go) code in Vim. I&#39;m sure this is just scratching the surface of what can (let alone should!) be done, and text editing being the subjective beast that it is, YMMV, but here goes, without further ado, I present to you my glorious Vim setup!" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link href="/css/main.css" rel="stylesheet" />
-		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<link rel="alternate" href="http://planner-eagle-44854.netlify.com/rss" type="application/rss&#43;xml" title="RSS" />
 		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
 	</head>
 	<body>
@@ -36,13 +36,13 @@
 			<nav>
 				<div class="container">
 					<div class="left quarter">
-						<a class="huge" href="implementing-lua-coroutines-in-Go" title="Implementing Lua coroutines in Go">«</a>
+						<a title="Implementing Lua coroutines in Go" class="huge" href="implementing-lua-coroutines-in-Go">«</a>
 					</div>
 					<div class="middle big half">
 						<span>My (Go-centric) Vim Setup</span>
 					</div>
 					<div class="right quarter">
-						<a class="huge" href="introducing-agora--a-dynamic--embeddable-programming-language-built-with-Go" title="Introducing agora: a dynamic, embeddable programming language built with Go">»</a>
+						<a title="Introducing agora: a dynamic, embeddable programming language built with Go" class="huge" href="introducing-agora--a-dynamic--embeddable-programming-language-built-with-Go">»</a>
 					</div>
 					<div class="clearfix"></div>
 				</div>

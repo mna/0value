@@ -7,7 +7,7 @@
 		<meta name="description" content="Long uglified JSON files can be painful to look at. Same thing with binary files that you want to scan visually. Thankfully, a simple Vim configuration can make your life much better." />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link href="/css/main.css" rel="stylesheet" />
-		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<link rel="alternate" href="http://planner-eagle-44854.netlify.com/rss" type="application/rss&#43;xml" title="RSS" />
 		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
 	</head>
 	<body>
@@ -36,13 +36,13 @@
 			<nav>
 				<div class="container">
 					<div class="left quarter">
-						<a class="huge" href="throttled--guardian-of-the-web-server" title="Throttled: Guardian Of The Web Server">«</a>
+						<a title="Throttled: Guardian Of The Web Server" class="huge" href="throttled--guardian-of-the-web-server">«</a>
 					</div>
 					<div class="middle big half">
 						<span>Dealing with binary files and uglified JSON in Vim</span>
 					</div>
 					<div class="right quarter">
-						<a class="huge" href="A-PEG-parser-generator-for-Go" title="A PEG parser generator for Go">»</a>
+						<a title="A PEG parser generator for Go" class="huge" href="A-PEG-parser-generator-for-Go">»</a>
 					</div>
 					<div class="clearfix"></div>
 				</div>

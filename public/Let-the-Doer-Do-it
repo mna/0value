@@ -7,7 +7,7 @@
 		<meta name="description" content="There are lots of Go packages out there that make HTTP requests, maybe because they wrap a RESTful API or they do web crawling, etc. Regardless of the reason, at some point they use an *http.Client to make those requests. This article is a recommendation on how I believe this client should be managed." />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link href="/css/main.css" rel="stylesheet" />
-		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<link rel="alternate" href="http://planner-eagle-44854.netlify.com/rss" type="application/rss&#43;xml" title="RSS" />
 		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
 	</head>
 	<body>
@@ -36,13 +36,13 @@
 			<nav>
 				<div class="container">
 					<div class="left quarter">
-						<a class="huge" href="A-PEG-parser-generator-for-Go" title="A PEG parser generator for Go">«</a>
+						<a title="A PEG parser generator for Go" class="huge" href="A-PEG-parser-generator-for-Go">«</a>
 					</div>
 					<div class="middle big half">
 						<span>Let the Doer Do it</span>
 					</div>
 					<div class="right quarter">
-						<a class="huge" href="about-Go-logging" title="About Go logging for reusable packages">»</a>
+						<a title="About Go logging for reusable packages" class="huge" href="about-Go-logging">»</a>
 					</div>
 					<div class="clearfix"></div>
 				</div>

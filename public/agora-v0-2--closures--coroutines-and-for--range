@@ -7,7 +7,7 @@
 		<meta name="description" content="A few weeks ago, I introduced agora, a small and simple programming language built with Go. It&#39;s a dynamically typed, dynamically loaded, garbage collected and embeddable language with a small footprint and a familiar Go-like syntax. Oh, and it is open source and available on GitHub. Well, today I&#39;m pleased to announce the release v0.2!" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link href="/css/main.css" rel="stylesheet" />
-		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
+		<link rel="alternate" href="http://planner-eagle-44854.netlify.com/rss" type="application/rss&#43;xml" title="RSS" />
 		<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.6.2/html5shiv.js"></script>
 	</head>
 	<body>
@@ -36,13 +36,13 @@
 			<nav>
 				<div class="container">
 					<div class="left quarter">
-						<a class="huge" href="introducing-agora--a-dynamic--embeddable-programming-language-built-with-Go" title="Introducing agora: a dynamic, embeddable programming language built with Go">«</a>
+						<a title="Introducing agora: a dynamic, embeddable programming language built with Go" class="huge" href="introducing-agora--a-dynamic--embeddable-programming-language-built-with-Go">«</a>
 					</div>
 					<div class="middle big half">
 						<span>Agora v0.2: Closures, Coroutines and For-Range</span>
 					</div>
 					<div class="right quarter">
-						<a class="huge" href="build-a-restful-API-with-Martini" title="Build a RESTful API with Martini">»</a>
+						<a title="Build a RESTful API with Martini" class="huge" href="build-a-restful-API-with-Martini">»</a>
 					</div>
 					<div class="clearfix"></div>
 				</div>
