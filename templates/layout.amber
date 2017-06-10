@@ -76,7 +76,7 @@ html.no-js[lang="en"]
 				el = document.createElement("script");
 				sc = document.getElementsByTagName("script")[0];
 				el.async = 1;
-				el.src = "https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js?lang=go";
+				el.src = "https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js";
 				sc.parentNode.insertBefore(el, sc);
 			}
 		script
