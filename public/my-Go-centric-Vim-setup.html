@@ -2,9 +2,9 @@
 <html class="no-js" lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta content="IE=edge" http-equiv="X-UA-Compatible" />
 		<title>My (Go-centric) Vim Setup</title>
-		<meta name="description" content="This is the result of quite a few googling safaris, and hopefully it can prove helpful to others wanting to write (especially Go) code in Vim. I&#39;m sure this is just scratching the surface of what can (let alone should!) be done, and text editing being the subjective beast that it is, YMMV, but here goes, without further ado, I present to you my glorious Vim setup!" />
+		<meta content="This is the result of quite a few googling safaris, and hopefully it can prove helpful to others wanting to write (especially Go) code in Vim. I&#39;m sure this is just scratching the surface of what can (let alone should!) be done, and text editing being the subjective beast that it is, YMMV, but here goes, without further ado, I present to you my glorious Vim setup!" name="description" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link href="/css/main.css" rel="stylesheet" />
 		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
@@ -36,13 +36,13 @@
 			<nav>
 				<div class="container">
 					<div class="left quarter">
-						<a title="Implementing Lua coroutines in Go" class="huge" href="implementing-lua-coroutines-in-Go">«</a>
+						<a class="huge" href="implementing-lua-coroutines-in-Go" title="Implementing Lua coroutines in Go">«</a>
 					</div>
 					<div class="middle big half">
 						<span>My (Go-centric) Vim Setup</span>
 					</div>
 					<div class="right quarter">
-						<a title="Introducing agora: a dynamic, embeddable programming language built with Go" class="huge" href="introducing-agora--a-dynamic--embeddable-programming-language-built-with-Go">»</a>
+						<a class="huge" href="introducing-agora--a-dynamic--embeddable-programming-language-built-with-Go" title="Introducing agora: a dynamic, embeddable programming language built with Go">»</a>
 					</div>
 					<div class="clearfix"></div>
 				</div>
@@ -104,7 +104,6 @@ nmap &lt;F5&gt; :make&lt;CR&gt;:copen&lt;CR&gt;
 endfunction
 command! GoVet :call s:GoVet()
 
-
 function! s:GoLint()
     cexpr system(&quot;golint &quot; . shellescape(expand('%')))
     copen
@@ -148,12 +147,16 @@ set fu &quot; Start fullscreen
 </article>
 				<p class="meta">
 					<time datetime="2013-08-15">published 2013-08-15</time>
-					<time datetime="2017-06-10">and last updated 2017-06-10</time>
+					<time datetime="2019-01-27">and last updated 2019-01-27</time>
 				</p>
 			</main>
 			<hr />
 			<footer>
 				<ul class="container middle">
+					<li>
+						<time datetime="2019-01-28">2019-01-28</time>
+						<a href="using-arch-linux-on-a-macbook-pro">Using Arch Linux on a Macbook Pro</a>
+					</li>
 					<li>
 						<time datetime="2016-03-02">2016-03-02</time>
 						<a href="about-Go-logging">About Go logging for reusable packages</a>
@@ -169,10 +172,6 @@ set fu &quot; Start fullscreen
 					<li>
 						<time datetime="2014-06-16">2014-06-16</time>
 						<a href="Dealing-with-binary-files-and-uglified-json-in-Vim">Dealing with binary files and uglified JSON in Vim</a>
-					</li>
-					<li>
-						<time datetime="2014-02-19">2014-02-19</time>
-						<a href="throttled--guardian-of-the-web-server">Throttled: Guardian Of The Web Server</a>
 					</li>
 				</ul>
 				<div class="container middle">

@@ -2,9 +2,9 @@
 <html class="no-js" lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta content="IE=edge" http-equiv="X-UA-Compatible" />
 		<title>Implementing Lua coroutines in Go</title>
-		<meta name="description" content="I have a funny-weird relationship with the Lua language, I have never written anything remotely useful with it and am unfamiliar with its syntax, but I know its internals quite well, thanks to my obsession with virtual machines and my unfinished attempt at building the Lua VM in Go. Anyway, Lua has this nice feature called coroutines, and I&#39;ll let wikipedia introduce it to those unfamiliar with the concept..." />
+		<meta content="I have a funny-weird relationship with the Lua language, I have never written anything remotely useful with it and am unfamiliar with its syntax, but I know its internals quite well, thanks to my obsession with virtual machines and my unfinished attempt at building the Lua VM in Go. Anyway, Lua has this nice feature called coroutines, and I&#39;ll let wikipedia introduce it to those unfamiliar with the concept..." name="description" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link href="/css/main.css" rel="stylesheet" />
 		<link rel="alternate" href="https://www.0value.com/rss" type="application/rss&#43;xml" title="RSS" />
@@ -36,13 +36,13 @@
 			<nav>
 				<div class="container">
 					<div class="left quarter">
-						<a title="Build a blog engine in Go" class="huge" href="build-a-blog-engine-in-Go">«</a>
+						<a class="huge" href="build-a-blog-engine-in-Go" title="Build a blog engine in Go">«</a>
 					</div>
 					<div class="middle big half">
 						<span>Implementing Lua coroutines in Go</span>
 					</div>
 					<div class="right quarter">
-						<a title="My (Go-centric) Vim Setup" class="huge" href="my-Go-centric-Vim-setup">»</a>
+						<a class="huge" href="my-Go-centric-Vim-setup" title="My (Go-centric) Vim Setup">»</a>
 					</div>
 					<div class="clearfix"></div>
 				</div>
@@ -482,12 +482,16 @@ Resume(...interface{}) (interface{}, error)
 </article>
 				<p class="meta">
 					<time datetime="2013-07-29">published 2013-07-29</time>
-					<time datetime="2017-06-10">and last updated 2017-06-10</time>
+					<time datetime="2019-01-27">and last updated 2019-01-27</time>
 				</p>
 			</main>
 			<hr />
 			<footer>
 				<ul class="container middle">
+					<li>
+						<time datetime="2019-01-28">2019-01-28</time>
+						<a href="using-arch-linux-on-a-macbook-pro">Using Arch Linux on a Macbook Pro</a>
+					</li>
 					<li>
 						<time datetime="2016-03-02">2016-03-02</time>
 						<a href="about-Go-logging">About Go logging for reusable packages</a>
@@ -503,10 +507,6 @@ Resume(...interface{}) (interface{}, error)
 					<li>
 						<time datetime="2014-06-16">2014-06-16</time>
 						<a href="Dealing-with-binary-files-and-uglified-json-in-Vim">Dealing with binary files and uglified JSON in Vim</a>
-					</li>
-					<li>
-						<time datetime="2014-02-19">2014-02-19</time>
-						<a href="throttled--guardian-of-the-web-server">Throttled: Guardian Of The Web Server</a>
 					</li>
 				</ul>
 				<div class="container middle">
